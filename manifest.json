@@ -1,28 +1,32 @@
 {
-    "manifest_version": 2,
-    "name": "Breathing Exercise Extension",
-    "version": "1.0",
-    "description": "A Chrome extension for breathing exercises",
-    "permissions": [
-      "activeTab",
-      "storage"
-    ],
-    "background": {
-      "scripts": ["background.js"],
-      "persistent": false
-    },
-    "content_scripts": [
-      {
-        "matches": ["<all_urls>"],
-        "js": ["animationManager.js", "breatherUI.js", "content.js", "animationManager.js", "styles.js"],
-        "run_at": "document_idle"
-      }
-    ],
-    "browser_action": {
-      "default_popup": "popup/popup.html",
-      "default_icon": "icon.png"
-    },
-    "icons": {
-      "48": "icon.png"
+  "manifest_version": 2,
+  "name": "Breathing Exercise Extension",
+  "version": "1.0",
+  "description": "A Chrome extension for breathing exercises",
+  "permissions": [
+    "activeTab",
+    "storage"
+  ],
+  "background": {
+    "scripts": ["background.js"],
+    "persistent": false
+  },
+  "content_scripts": [
+    {
+      "matches": ["<all_urls>"],
+      "js": ["animationManager.js", "breatherUI.js", "content.js", "styles.js"],
+      "run_at": "document_idle"
     }
+  ],
+  "content_security_policy": "script-src 'self'; object-src 'self'; font-src https://fonts.gstatic.com;",
+  "web_accessible_resources": [
+    "https://fonts.googleapis.com/css2?family=Nunito:wght@300;400;600&display=swap"
+  ],
+  "browser_action": {
+    "default_popup": "popup/popup.html",
+    "default_icon": "icon.png"
+  },
+  "icons": {
+    "48": "icon.png"
   }
+}

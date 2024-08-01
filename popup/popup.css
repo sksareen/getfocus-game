@@ -1,42 +1,90 @@
-    body {
-      width: 300px;
-      padding: 20px;
-      font-family: 'Nunito', sans-serif;
-      background-color: #ffffff;
-      color: #a46379;
-    }
-    h1 {
-      font-size: 24px;
-      margin-bottom: 20px;
-      text-align: center;
-    }
-    select, button {
-      width: 100%;
-      padding: 10px;
-      margin-bottom: 15px;
-      border-radius: 25px;
-      border: none;
-      font-family: 'Nunito', sans-serif;
-      font-size: 16px;
-    }
-    select {
-      background-color: #FFF1E0;
-      color: #211c16;
-    }
-    button {
-      background-color: #d2a23a;
-      color: white;
-      cursor: pointer;
-      transition: background-color 0.3s;
-    }
-    button:hover {
-      background-color: #a46379;
-    }
-    #toggleOverlay {
-      background-color: #d2a23a;
-    }
-    #toggleOverlay:hover {
-      background-color: #a46379;
-    }
+body {
+  width: 300px;
+  padding: 20px;
+  font-family: 'Nunito', sans-serif;
+  background-color: #f0f4f8;
+  color: #4a4a4a;
+}
 
-  
+h2 {
+  font-size: 24px;
+  margin-bottom: 20px;
+  text-align: center;
+  color: #2c3e50;
+}
+
+select, button {
+  width: 100%;
+  padding: 10px;
+  margin-bottom: 5px;
+  border-radius: 25px;
+  border: none;
+  font-family: 'Nunito', sans-serif;
+  font-size: 16px;
+  transition: all 0.3s ease;
+}
+
+select {
+  background-color: #ffffff;
+  color: #2c3e50;
+}
+
+button {
+  background-color: #3498db;
+  color: white;
+  cursor: pointer;
+}
+
+button:hover {
+  background-color: #2980b9;
+  transform: translateY(-2px);
+  box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+}
+
+#exerciseDescription {
+  font-size: 14px;
+  margin-bottom: 15px;
+  text-align: center;
+  font-style: italic;
+  color: #7f8c8d;
+}
+
+#settingsPanel {
+  border-top: 1px solid #dbe0e5;
+  padding-top: 15px;
+  margin-top: 15px;
+}
+
+label {
+  display: block;
+  margin-bottom: 10px;
+  font-size: 14px;
+  color: #4a4a4a;
+  text-align: center;
+}
+
+#colorOptions {
+  display: flex;
+  justify-content: space-evenly;
+  margin-bottom: 15px;
+}
+
+.colorOption {
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
+  cursor: pointer;
+  transition: transform 0.3s ease;
+}
+
+.colorOption:hover {
+  transform: scale(1.1);
+}
+
+.colorOption.selected {
+  box-shadow: 0 0 0 2px #fff, 0 0 0 4px #3498db;
+}
+
+#showWords {
+  margin-right: 5px;
+}
