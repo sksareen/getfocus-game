@@ -7,9 +7,9 @@ const exercises = {
   sleep: { 
     name: '4-7-8 Breathing', 
     phases: [
-      { duration: 4000, instruction: 'Inhale through your nose' },
+      { duration: 4000, instruction: 'Breathe in the nose' },
       { duration: 7000, instruction: 'Hold your breath' },
-      { duration: 8000, instruction: 'Exhale through your mouth' },
+      { duration: 8000, instruction: 'Breathe out your mouth' },
       { duration: 1000, instruction: 'Pause' }
     ]
   },
