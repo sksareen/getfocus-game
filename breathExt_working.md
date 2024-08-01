@@ -83,10 +83,24 @@ button responsivitiy
 fade in transition
 
 #### What Doesn't
+make sure a page is open - if not then open google.com
 track state of hide/show and start/stop exercise to be conssitent with the popup buttons
 fix close X hover effect color
 
 unified color scheme
-change 'close' button to an X
 add a kebab menu in popup to open options
 in options allow color selection
+
+---
+### Iteration 10
+#### What Works
+1. Popup looks good
+2. popup settings start closed
+3. settings toggle works well
+4. Breathing type selector and info works well
+5. 
+
+#### What Doesn't
+1. make the text on countdown and instructions fade in/out every transition
+2. make sure timing and size of circles matches the timing in the const exercises
+3. make the 'stop exercise' button end the exercise but NOT hide the overlay

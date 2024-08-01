@@ -14,12 +14,12 @@ const styles = {
     left: 0;
     width: 100vw;
     height: 100vh;
-    background: #a46379;
+    background: #f5f9ff;
     display: flex;
     justify-content: center;
     align-items: center;
     z-index: 2147483647;
-    font-family: 'Nunito', Arial, sans-serif;
+    font-family: "Nunito", sans-serif;
     pointer-events: auto;
     opacity: 0;
     transition: opacity 0.3s ease-in-out;
@@ -35,12 +35,12 @@ const styles = {
     height: 100vh;
   `,
   circleContainer: `
-    width: 300px;
-    height: 300px;
+    position: relative;
+    width: 200px;
+    height: 200px;
     display: flex;
     justify-content: center;
     align-items: center;
-    margin-bottom: 20px;
   `,
   breathCircle: `
     width: 100px;
@@ -50,38 +50,70 @@ const styles = {
     transition: all 4s ease-in-out;
   `,
   instruction: `
-    font-size: 48px;
-    font-family : Avenir Black ;
-    margin: 20px 0;
-    padding: 10px;
-    color: #ffffff;
+    position: absolute;
+    bottom: 1vh;
+    font-size: 40px;
+    font-family: "Nunito", sans-serif;
+    margin: 20px;
+    padding: 15px;
+    color: #757575;
     font-weight: bold;
     min-height: 60px;
     z-index: 999999;
     line-height: 1.2em;
+    transition: background-color 0.3s;
   `,
   countdownTimer: `
-    font-size: 80px;
-    font-family : Avenir Black ;
+    position: relative;
+    font-size: 48px;
     font-weight: bold;
-    color: #ffffff;
-    margin-top: 20px;
+    font-family: "Nunito", sans-serif;
+    color: #757575;
     z-index: 99999;
+    transition: background-color 0.3s;
   `,
   closeButton: `
     position: absolute;
     top: 20px;
-    right: 20px;
-    padding: 10px 20px;
-    background: #a46379;
-    color: white;
+    right: 40px;
+    padding: 10px;
+    background: #f5f9ff;
+    color: grey;
     border: none;
-    border-radius: 25px;
+    border-radius: 40px;
     cursor: pointer;
-    font-size: 60px;
-    font-family: 'Nunito', Arial, sans-serif;
+    font-size: 30px;
+    font-family: 'Arial', Arial, sans-serif;
     transition: background-color 0.3s;
   `,
+   closeButtonHover: `
+    background: #e0e5f0;
+    color: black;
+  `,
+  settingsButton: `
+    position: absolute;
+    top: 20px;
+    left: 20px;
+    padding: 10px;
+    background: none;
+    border: none;
+    color: white;
+    font-size: 24px;
+    cursor: pointer;
+  `,
+  settingsMenu: `
+    position: absolute;
+    top: 0;
+    left: -300px;
+    width: 300px;
+    height: 100%;
+    background-color: rgba(0, 0, 0, 0.8);
+    color: white;
+    padding: 20px;
+    box-sizing: border-box;
+    transition: left 0.3s ease-in-out;
+    overflow-y: auto;
+  `
 };
 
 window.styles = styles;

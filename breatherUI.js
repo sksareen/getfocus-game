@@ -1,6 +1,12 @@
 function createBreatherUI() {
   console.log('Creating breather UI');
 
+  // Check if styles is defined
+  if (typeof styles === 'undefined') {
+    console.error('Styles object is not defined');
+    return null;
+  }
+
   const overlay = document.createElement('div');
   overlay.id = 'breather-extension-overlay';
   overlay.style.cssText = styles.overlay;
@@ -20,17 +26,20 @@ function createBreatherUI() {
 
   const instruction = document.createElement('p');
   instruction.id = 'breather-extension-instruction';
-  instruction.style.cssText = styles.instruction;
+  instruction.style.cssText = styles.instruction + 'transition: opacity 0.5s ease-in-out;';
 
   const countdownTimer = document.createElement('div');
   countdownTimer.id = 'breather-extension-timer';
-  countdownTimer.style.cssText = styles.countdownTimer;
+  countdownTimer.style.cssText = styles.countdownTimer + 'transition: opacity 0.5s ease-in-out;';
 
   const closeButton = document.createElement('button');
   closeButton.style.cssText = styles.closeButton;
   closeButton.textContent = 'X';
   closeButton.addEventListener('mouseover', () => {
-    closeButton.style.color = styles.colors.secondary;
+    closeButton.style.cssText += styles.closeButtonHover;
+  });
+  closeButton.addEventListener('mouseout', () => {
+    closeButton.style.cssText = styles.closeButton;
   });
   closeButton.addEventListener('click', () => {
     console.log('Close button clicked');
@@ -46,3 +55,5 @@ function createBreatherUI() {
   console.log('Breather UI created');
   return overlay;
 }
+
+window.createBreatherUI = createBreatherUI;
