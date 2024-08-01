@@ -1,5 +1,5 @@
 {
-  "manifest_version": 2,
+  "manifest_version": 3,
   "name": "Breathing Exercise Extension",
   "version": "1.0",
   "description": "A Chrome extension for breathing exercises",
@@ -8,8 +8,7 @@
     "storage"
   ],
   "background": {
-    "scripts": ["background.js"],
-    "persistent": false
+    "service_worker": "background.js"
   },
   "content_scripts": [
     {
@@ -18,11 +17,16 @@
       "run_at": "document_idle"
     }
   ],
-  "content_security_policy": "script-src 'self'; object-src 'self'; font-src https://fonts.gstatic.com;",
+  "content_security_policy": {
+    "extension_pages": "script-src 'self'; object-src 'self'; font-src https://fonts.gstatic.com;"
+  },
   "web_accessible_resources": [
-    "https://fonts.googleapis.com/css2?family=Nunito:wght@300;400;600&display=swap"
+    {
+      "resources": ["https://fonts.googleapis.com/css2?family=Nunito:wght@300;400;600&display=swap"],
+      "matches": ["<all_urls>"]
+    }
   ],
-  "browser_action": {
+  "action": {
     "default_popup": "popup/popup.html",
     "default_icon": "icon.png"
   },
