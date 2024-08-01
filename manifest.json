@@ -1,0 +1,28 @@
+{
+    "manifest_version": 2,
+    "name": "Breathing Exercise Extension",
+    "version": "1.0",
+    "description": "A Chrome extension for breathing exercises",
+    "permissions": [
+      "activeTab",
+      "storage"
+    ],
+    "background": {
+      "scripts": ["background.js"],
+      "persistent": false
+    },
+    "content_scripts": [
+      {
+        "matches": ["<all_urls>"],
+        "js": ["animationManager.js", "breatherUI.js", "content.js", "animationManager.js", "styles.js"],
+        "run_at": "document_idle"
+      }
+    ],
+    "browser_action": {
+      "default_popup": "popup/popup.html",
+      "default_icon": "icon.png"
+    },
+    "icons": {
+      "48": "icon.png"
+    }
+  }
