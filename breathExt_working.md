@@ -71,4 +71,22 @@ patterns
 - reset everything on 'stop exercise' or 'close' 
 - make 'close' a poitner event
 - make entire overlay show/hide on icon press
-- 
+
+---
+
+### Iteration 8
+#### What Works
+font
+screen takeover
+file seperations
+button responsivitiy
+fade in transition
+
+#### What Doesn't
+track state of hide/show and start/stop exercise to be conssitent with the popup buttons
+fix close X hover effect color
+
+unified color scheme
+change 'close' button to an X
+add a kebab menu in popup to open options
+in options allow color selection

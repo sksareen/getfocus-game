@@ -78,7 +78,7 @@ class AnimationManager {
       const animate = (currentTime) => {
         elapsed = currentTime - startTime;
         const remaining = Math.ceil((currentPhase.duration - elapsed) / 1000);
-        countdownTimer.textContent = remaining > 0 ? remaining : '';
+        countdownTimer.textContent = remaining > 0 ? `${remaining}` : '';
   
         if (elapsed < currentPhase.duration) {
           this.animationFrame = requestAnimationFrame(animate);

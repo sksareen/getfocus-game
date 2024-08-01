@@ -45,7 +45,7 @@ function updateButtonStates() {
   const toggleOverlayButton = document.getElementById('toggleOverlay');
   const toggleExerciseButton = document.getElementById('toggleExercise');
 
-  toggleOverlayButton.textContent = isOverlayVisible ? 'Hide Overlay' : 'Show Overlay';
+  toggleOverlayButton.textContent = isOverlayVisible ? 'Close Guide' : 'Open Breathing Guide';
   toggleExerciseButton.textContent = isExerciseActive ? 'Stop Exercise' : 'Start Exercise';
 
   chrome.storage.local.set({

@@ -58,7 +58,7 @@ const styles = {
     font-weight: bold;
     min-height: 60px;
     z-index: 999999;
-    line-height; 2em;
+    line-height: 1.2em;
   `,
   countdownTimer: `
     font-size: 80px;
@@ -73,12 +73,12 @@ const styles = {
     top: 20px;
     right: 20px;
     padding: 10px 20px;
-    background: #3a83d2;
+    background: #a46379;
     color: white;
     border: none;
     border-radius: 25px;
     cursor: pointer;
-    font-size: 16px;
+    font-size: 60px;
     font-family: 'Nunito', Arial, sans-serif;
     transition: background-color 0.3s;
   `,

@@ -27,13 +27,10 @@ function createBreatherUI() {
   countdownTimer.style.cssText = styles.countdownTimer;
 
   const closeButton = document.createElement('button');
-  closeButton.textContent = 'Close';
   closeButton.style.cssText = styles.closeButton;
+  closeButton.textContent = 'X';
   closeButton.addEventListener('mouseover', () => {
-    closeButton.style.backgroundColor = styles.colors.primary;
-  });
-  closeButton.addEventListener('mouseout', () => {
-    closeButton.style.backgroundColor = styles.colors.secondary;
+    closeButton.style.color = styles.colors.secondary;
   });
   closeButton.addEventListener('click', () => {
     console.log('Close button clicked');
@@ -41,8 +38,8 @@ function createBreatherUI() {
   });
 
   content.appendChild(circleContainer);
-  content.appendChild(instruction);
   content.appendChild(countdownTimer);
+  content.appendChild(instruction);
   overlay.appendChild(content);
   overlay.appendChild(closeButton);
 
