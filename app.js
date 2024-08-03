@@ -33,6 +33,7 @@ window.exercises = {
 let breatherUI;
 let isOverlayVisible = true;
 let isExerciseActive = false;
+let showInstructions = true;
 let animationManager;
 let currentExercise = 'sleep';
 
@@ -71,14 +72,14 @@ function initializeApp() {
   document.addEventListener('breatherClosed', stopExerciseAndHideOverlay);
   document.addEventListener('breatherToggled', toggleExercise);
 
-  storage.get(['isOverlayVisible', 'isExerciseActive', 'currentExercise'], (result) => {
+  storage.get(['isOverlayVisible', 'isExerciseActive', 'currentExercise', 'showInstructions'], (result) => {
     isOverlayVisible = result.isOverlayVisible !== null ? result.isOverlayVisible : true;
     isExerciseActive = false; // Always start in stopped state
     currentExercise = result.currentExercise || 'sleep';
+    showInstructions = result.showInstructions !== undefined ? result.showInstructions : true;
     updateUIState();
     showOverlay(); // Show the overlay initially
   });
-
   storage.get(['colorTheme', 'showWords'], (result) => {
     if (result.colorTheme) {
       updateColorTheme(result.colorTheme);
