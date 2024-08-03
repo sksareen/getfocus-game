@@ -101,6 +101,18 @@ in options allow color selection
 5. 
 
 #### What Doesn't
-1. make the text on countdown and instructions fade in/out every transition
-2. make sure timing and size of circles matches the timing in the const exercises
-3. make the 'stop exercise' button end the exercise but NOT hide the overlay
+1. Make the text on countdown and instructions fade in/out every transition, center it in the page
+2. Make sure timing and size of circles matches the timing in the const exercises
+3. Make the 'stop exercise' button end the exercise but NOT hide the overlay
+4. Add a circle outline to set expectaitons for how long every count takes
+5. 
+
+#### Graphic
+1. place countdown in the center
+2. make text grow and shrink with the circle
+3. lighter grey/less bold font
+4. make nunito the font
+5. make every change in text fade in/out
+6. make boundary circle for the min and max size of the circle
+
+
