@@ -106,11 +106,10 @@ class AnimationManager {
         this.phase = 0;
         this.lastPhaseType = null;
         this.resetCircle();
+        this.updateCycleCount();
         if (this.isExerciseActive) {
             this.breathingAnimation();
         }
-        this.cycleCount = 0;
-        this.updateCycleCount();
     }
 
     resetCircle() {

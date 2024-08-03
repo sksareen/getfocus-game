@@ -168,8 +168,8 @@ stopButtonHover: `
 `,
 closeButton: `
   position: absolute;
-  top: .8em;
-  right: .8em;
+  top: 3vh;
+  right: 4vh;
   padding: 0;
   width: 2em;
   height: 2em;
