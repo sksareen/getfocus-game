@@ -1,0 +1,242 @@
+/* Global styles */
+body {
+    font-family: 'Google Sans', sans-serif;
+    color: white;
+  }
+
+h2 {
+    text-align: center;
+    color: rgb(52, 52, 52);
+    font-weight: 500;
+}
+  
+  /* Overlay styles */
+  #breather-extension-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    background: #f5f9ff;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 2147483647;
+    pointer-events: auto;
+    opacity: 0;
+    transition: opacity 0.3s ease-in-out;
+    z-index: 50000;
+  }
+  
+  #breather-extension-content {
+    text-align: center;
+    width: 80vw;
+    height: 80vh;
+    max-width: 90vw;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    z-index: 50000;
+  }
+  
+  .circle-container {
+    position: fixed;
+    width: 12vw;
+    height: 12vw;
+    max-height: 80%;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+  }
+  
+  #breather-extension-circle {
+    position: fixed;
+    width: 8vw;
+    height: 8vw;
+    max-width: 80%;
+    max-height: 80%;
+    border-radius: 50%;
+    background: #ffdf7c;
+    transition: all 4s ease-in-out;
+    z-index: 99999;
+  }
+  
+  #breather-extension-outline-circle-small {
+    position: fixed;
+    width: 8vw;
+    height: 8vw;
+    border-radius: 50%;
+    opacity: 0.1;
+    background: #fff;
+    z-index: 999991;
+  }
+  
+  #breather-extension-outline-circle-big {
+    position: fixed;
+    max-width: 400vh;
+    max-height: 400vh;
+    width: 40vw;
+    height: 40vw;
+    border-radius: 50%;
+    opacity: 0.5;
+    background: #fff;
+    z-index: 9999;
+  }
+  
+  #breather-extension-instruction {
+    position: fixed;
+    bottom: 12vh;
+    font-size: 3vh;
+    font-weight: 500;
+    margin: 1vh;
+    padding-bottom: 2vh;
+    min-height: 6vh;
+    line-height: 2vh;
+    transition: all 0.3s ease;
+    z-index: 50000;
+  }
+  
+  #breather-extension-timer {
+    position: absolute;
+    font-size: 5vh;
+    font-weight: 300;
+    opacity: 0.8;
+    z-index: 50000;
+    transition: all 0.3s ease;
+  }
+  
+  #breather-extension-info {
+    position: fixed;
+    bottom: 10vh;
+    font-size: 2vh;
+    font-weight: 400;
+    margin: 1vh;
+    padding-bottom: 2vh;
+    min-height: 2.5vh;
+    z-index: 99999;
+    transform: opacity translateX(-50%);
+    transition: all .3s ease;
+  }
+  
+  #breather-extension-toggle-button {
+    position: fixed;
+    bottom: 6vh;
+    padding: 1em;
+    width: 10vw;
+    height: 1vh;
+    color: white;
+    cursor: pointer;
+    font-size: 2.2vh;
+    font-weight: 400;
+    border-radius: 20px;
+    opacity: 0.8;
+    transition: all 0.3s ease;
+    border: none;
+    min-width: 70px;
+    max-width: 200px;
+    background-color: rgb(61, 153, 112, 0.8);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 999999;
+    text-align: center;
+    box-shadow: 0 2px 8px 2px rgba(0, 0, 0, 0.03);
+  }
+  
+  #breather-extension-toggle-button:hover {
+    background-color: rgb(61, 153, 112);
+    transform: translateY(-1px);
+    box-shadow: 0 2px 10px 2px rgba(0, 0, 0, 0.03);
+  }
+  
+  #breather-extension-toggle-button.stop {
+    background-color: rgba(0, 0, 0, 0.2);
+  }
+  
+  #breather-extension-toggle-button.stop:hover {
+    background-color: #e24e53;
+  }
+  
+  #exercise-selector {
+    position: absolute;
+    top: 4vh;
+    left: 50%;
+    transform: translateX(-50%);
+    padding: 10px;
+    font-size: 1.2em;
+    text-align: center;
+    z-index: 999999;
+    display: block;
+    width: 30%;
+    margin-bottom: 5px;
+    border-radius: 25px;
+    border: none;
+    transition: all 0.3s ease;
+    cursor: pointer;
+    box-shadow: 0 2px 8px 2px rgba(0, 0, 0, 0.03);
+  }
+
+  /* Add these styles to your existing styles.css file */
+
+#colorOptions {
+    display: flex;
+    justify-content: center;
+    margin-bottom: 15px;
+    position: absolute;
+    top: 2vh;
+    right: 2vh;
+  }
+  
+  .colorOption {
+    width: 30px;
+    height: 30px;
+    border-radius: 50%;
+    cursor: pointer;
+    transition: transform 0.3s ease;
+    margin: 0 5px;
+  }
+  
+  .colorOption:hover {
+    transform: scale(1.1);
+  }
+  
+  .colorOption.selected {
+    box-shadow: 0 0 0 2px #fff, 0 0 0 4px #3498db;
+  }
+  
+  #showWordsCheckbox {
+    position: absolute;
+    top: 6vh;
+    right: 2vh;
+  }
+  
+  label[for="showWordsCheckbox"] {
+    position: absolute;
+    top: 6vh;
+    right: 3.5vh;
+    font-size: 1.3vh;
+    color: #4a4a4a;
+  }
+
+#link {
+    position: fixed;
+    bottom: 10px;
+    left: 50%;
+    transform: translateX(-50%);
+    z-index: 2147483648; /* Ensure it's above the overlay */
+    text-align: center;
+    font-size: 1em;
+    padding-top: 1em;
+    font-family: 'Google Sans', sans-serif;
+}
+
+#link a {
+    color: #3498db;
+    text-decoration: none;
+    transition: color 0.3s ease;
+}
+
+#link a:hover {
+    color: #2980b9;
+}
