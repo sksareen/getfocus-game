@@ -124,10 +124,6 @@ function startExercise() {
   isExerciseActive = true;
   if (animationManager) {
     animationManager.startAnimation(currentExercise);
-    const infoElement = shadowRoot.getElementById('breather-extension-info');
-    if (infoElement) {
-      infoElement.textContent = `${exercises[currentExercise].name} - 0 cycles`;
-    }
   }
   updateToggleButton('Stop');
   updateState();
@@ -185,10 +181,6 @@ function updateSettings(settings) {
       countdownTimer.style.display = settings.showWords ? 'block' : 'none';
     }
     }
-  const cycleCount = shadowRoot.getElementById('breather-extension-info');
-  if (cycleCount) {
-      cycleCount.textContent = 'loading...';
-  }
 }
 
 function applyPendingSettings() {
@@ -220,7 +212,7 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
       requestAnimationFrame(() => {
         setTimeout(() => {
           startExercise();
-        }, 1500); // 1.5s delay before starting the exercise
+        }, 1000); // 1s delay before starting the exercise
       });
       break;
     case "stopExercise":

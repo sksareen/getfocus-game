@@ -2,9 +2,9 @@ let isOverlayVisible = false;
 let isExerciseActive = false;
 
 const exerciseDescriptions = {
-  sleep: "4-7-8 Breathing: Helps reduce anxiety and aids sleep.",
-  anxiety: "Box Breathing: Calms the nervous system and improves focus.",
-  focus: "Alternate Nostril: Balances the mind and enhances concentration."
+  sleep: "Disarm your mind, find calm, and drift into restful sleep with this tranquil technique",
+  anxiety: "Master your body and mind like a Navy SEAL with this powerful stress-busting method",
+  focus: "Hone your concentration and balance your nervous system with this yogic practice"
 };
 
 document.addEventListener('DOMContentLoaded', () => {
@@ -60,10 +60,15 @@ document.addEventListener('DOMContentLoaded', () => {
       });
     }
   });
-
-  settingsButton.addEventListener('click', () => {
+  
+  settingsButton.addEventListener('click', function() {
+    // Toggle the visibility of the settings panel
     settingsPanel.style.display = settingsPanel.style.display === 'block' ? 'none' : 'block';
+    
+    // Toggle the 'active' class on the button
+    this.classList.toggle('active');
   });
+  
 
   colorOptions.forEach(option => {
     option.addEventListener('click', () => {
@@ -115,7 +120,8 @@ function updateStateFromStorage() {
   
     if (isExerciseActive) {
       toggleExerciseButton.textContent = 'Stop and Close';
-      toggleExerciseButton.style.backgroundColor = '#e74c3c';
+      toggleExerciseButton.style.backgroundColor = '#e24e53';
+      toggleExerciseButton.style.opacity = '0.9';
     } else {
       toggleExerciseButton.textContent = 'Start Activity';
       toggleExerciseButton.style.backgroundColor = '#3498db';

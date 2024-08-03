@@ -8,15 +8,25 @@
     <link rel="stylesheet" href="popup.css">
 </head>
 <body>
+    <div id="popupContainer">
     <h2>Breathing Exercise</h2>
+    
     <select id="exerciseSelect">
         <option value="sleep">4-7-8 Breathing (Sleep)</option>
         <option value="anxiety">Box Breathing (Anxiety)</option>
         <option value="focus">Alternate Nostril (Focus)</option>
     </select>
+    
     <p id="exerciseDescription"></p>
+    
     <button id="toggleExercise">Start Activity</button>
+    
     <button id="settingsButton">Settings</button>
+    
+    <div id="link">
+        <a href="https://getfocus.ai/breathe" target="_blank">Learn More</a>
+    </div>
+    
     <div id="settingsPanel" style="display: none;">
         <label>Select Color Theme:</label>
         <div id="colorOptions">
