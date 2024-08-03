@@ -3,7 +3,6 @@ function createBreatherUI() {
 
   const overlay = document.createElement('div');
   overlay.id = 'breather-extension-overlay';
-  overlay.style.height = 'calc(100vh - 40px)';
 
   const content = document.createElement('div');
   content.id = 'breather-extension-content';
