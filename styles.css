@@ -97,6 +97,8 @@ h2 {
   bottom: 28vh;
   font-size: clamp(3.5vh, 3vw, 3vh);
   font-weight: bold;
+  z-index: 9999;
+  opacity: 0.6;
 }
 
 #breather-extension-timer {
@@ -104,7 +106,7 @@ h2 {
   font-size: clamp(4vh, 4vw, 5vh);
   font-weight: bold;
   z-index: 9999;
-  opacity: 0.8;
+  opacity: 0.6;
 }
 
 #breather-extension-info {
