@@ -134,6 +134,7 @@ function toggleBreathing() {
 }
 
 function changeExercise(event) {
+  stopExercise();
   const newExercise = event.detail.exercise;
   if (window.exercises[newExercise]) {
     currentExercise = newExercise;
