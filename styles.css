@@ -18,6 +18,16 @@ h2 {
   text-align: center;
 }
 
+footer {
+  z-index: 214748365999; /* Increased z-index to be above the overlay */
+  position: absolute;
+  margin: 0;
+  font-size: clamp(.8rem, 1vw, 1rem);
+  margin-left: 20px;
+  right: 23px;
+  bottom: 0;
+}
+
 /* Overlay styles */
 #breather-extension-overlay {
   position: fixed;
@@ -143,7 +153,7 @@ h2 {
 
 .controls-container {
   position: fixed;
-  top: 60px;
+  top: 20px;
   right: 20px;
   display: flex;
   flex-direction: column;
@@ -205,7 +215,7 @@ input:checked + .toggle-slider:before {
 
 #link {
   position: fixed;
-  top: 20px;
+  bottom: 45px;
   right: 20px;
   z-index: 2147483648;
   padding: 0.6em 1em;
@@ -274,9 +284,13 @@ body.dark-mode {
 
   #link {
     right: 6px;
-    top: 12px;
+    bottom: 30px;
     transform: translateX(5%) scale(.8);
   }
+
+  footer {
+    right: 17px;
+  }  
 
   .controls-container {
     position: fixed;
