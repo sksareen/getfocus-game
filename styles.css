@@ -316,7 +316,7 @@ body.dark-mode {
 }
 
 
-@media (max-height: 700px) {
+@media (max-height: 600px) {
   .circle-container {
     width: 60vmin;
     height: 60vmin;
@@ -334,7 +334,7 @@ body.dark-mode {
   }
 
   #breather-extension-instruction {
-    bottom: 20vh;
+    bottom: 38vh;
   }
 
   #breather-extension-info {
