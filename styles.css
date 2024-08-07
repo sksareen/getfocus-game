@@ -260,6 +260,10 @@ body.dark-mode {
     font-size: 3vh;
   }
 
+  #breather-extension-info {
+    top: 14vh;
+  }
+
   #breather-extension-timer {
     bottom: 42vh;
   }
@@ -338,7 +342,7 @@ body.dark-mode {
   }
 
   #breather-extension-info {
-    top: 12vh;
+    top: 14vh;
   }
 
   #breather-extension-timer {
