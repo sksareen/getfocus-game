@@ -33,7 +33,6 @@ function createBreatherUI() {
   toggleButton.id = 'breather-extension-toggle-button';
   toggleButton.textContent = 'Start';
   toggleButton.addEventListener('click', () => {
-    console.log('Toggle button clicked');
     document.dispatchEvent(new CustomEvent('breatherToggled', { bubbles: true }));
   });
 
@@ -41,95 +40,62 @@ function createBreatherUI() {
   infoElement.id = 'breather-extension-info';
   infoElement.textContent = 'loading...';
 
-  const exerciseSelector = document.createElement('select');
-  exerciseSelector.id = 'exercise-selector';
-  Object.keys(window.exercises).forEach(key => {
-    const option = document.createElement('option');
-    option.value = key;
-    option.textContent = window.exercises[key].name;
-    exerciseSelector.appendChild(option);
-  });
-  exerciseSelector.addEventListener('change', (e) => {
-    document.dispatchEvent(new CustomEvent('appAction', {
-      detail: { action: 'changeExercise', exercise: e.target.value }
-    }));
-  });
+  const controlsContainer = document.createElement('div');
+  controlsContainer.className = 'controls-container';
 
-  const colorOptions = document.createElement('div');
-  colorOptions.id = 'colorOptions';
-  
-  const colors = [
-    { primary: "#3a83d2", secondary: "#a0c5e8" },
-    { primary: "#4caf50", secondary: "#a5d6a7" },
-    { primary: "#ff9800", secondary: "#ffcc80" }
-  ];
-
-  colors.forEach(color => {
-    const option = document.createElement('div');
-    option.className = 'colorOption';
-    option.style.backgroundColor = color.primary;
-    option.dataset.primary = color.primary;
-    option.dataset.secondary = color.secondary;
-    option.addEventListener('click', () => updateColorTheme(color));
-    colorOptions.appendChild(option);
-  });
-
-  // Add show/hide instructions checkbox
-  const showWordsCheckbox = document.createElement('input');
-  showWordsCheckbox.type = 'checkbox';
-  showWordsCheckbox.id = 'showWordsCheckbox';
-  showWordsCheckbox.checked = true;
-  showWordsCheckbox.addEventListener('change', toggleInstructions);
-
-  const showWordsLabel = document.createElement('label');
-  showWordsLabel.htmlFor = 'showWordsCheckbox';
-  showWordsLabel.textContent = 'Show Instructions';
+  const exerciseToggle = createToggleSwitch('exercise-toggle', 'Change Exercise', toggleExercise);
+  const darkModeToggle = createToggleSwitch('dark-mode-toggle', 'Dark Mode', toggleDarkMode);
 
   content.appendChild(circleContainer);
   content.appendChild(countdownTimer);
   content.appendChild(instruction);
+  content.appendChild(infoElement);
+  content.appendChild(toggleButton);
+  
   overlay.appendChild(content);
-  overlay.appendChild(toggleButton);
-  overlay.appendChild(infoElement);
-  overlay.appendChild(exerciseSelector);
-  overlay.appendChild(showWordsCheckbox);
-  overlay.appendChild(showWordsLabel);
-  overlay.appendChild(colorOptions);
+  overlay.appendChild(controlsContainer);
+
+  controlsContainer.appendChild(exerciseToggle);
+  controlsContainer.appendChild(darkModeToggle);
 
   console.log('Breather UI created');
-  return overlay;  // Return both elements
+  return overlay;
 }
 
-function updateColorTheme(colorTheme) {
-  document.querySelectorAll('.colorOption').forEach(option => {
-    option.classList.toggle('selected', option.dataset.primary === colorTheme.primary);
-  });
+function createToggleSwitch(id, labelText, onChangeFunction) {
+  const container = document.createElement('div');
+  container.className = 'toggle-container';
 
-  const circle = document.getElementById('breather-extension-circle');
-  const overlay = document.getElementById('breather-extension-overlay');
-  if (circle && overlay) {
-    circle.style.backgroundColor = colorTheme.primary;
-    overlay.style.backgroundColor = colorTheme.secondary;
-  }
+  const label = document.createElement('label');
+  label.className = 'toggle-switch';
+  label.htmlFor = id;
 
-  // Save the color theme
-  storage.set({ colorTheme: colorTheme });
+  const input = document.createElement('input');
+  input.type = 'checkbox';
+  input.id = id;
+  input.addEventListener('change', onChangeFunction);
+
+  const slider = document.createElement('span');
+  slider.className = 'toggle-slider';
+  
+  const textLabel = document.createElement('span');
+  textLabel.textContent = labelText;
+  textLabel.className = 'text-label';
+
+  label.appendChild(input);
+  label.appendChild(slider);
+  container.appendChild(textLabel);
+  container.appendChild(label);
+
+  return container;
 }
 
-function toggleInstructions() {
-  const instruction = document.getElementById('breather-extension-instruction');
-  const countdownTimer = document.getElementById('breather-extension-timer');
-  const showWords = document.getElementById('showWordsCheckbox').checked;
-
-  if (instruction && countdownTimer) {
-    instruction.style.display = showWords ? 'block' : 'none';
-    countdownTimer.style.display = showWords ? 'block' : 'none';
-  }
-
-  // Save the show words preference
-  storage.set({ showWords: showWords });
+function toggleDarkMode() {
+  const isDarkMode = document.getElementById('dark-mode-toggle').checked;
+  document.body.classList.toggle('dark-mode', isDarkMode);
+  storage.set({ darkMode: isDarkMode });
 }
 
-// Add this to the end of the file
-window.updateColorTheme = updateColorTheme;
-window.toggleInstructions = toggleInstructions;
+window.createBreatherUI = createBreatherUI;
+window.toggleExercise = toggleExercise;
+window.toggleDarkMode = toggleDarkMode;
