@@ -3,6 +3,7 @@ class AnimationManager {
         this.container = container;
         this.exercises = exercises;
         this.isExerciseActive = false;
+        this.isPaused = false;
         this.currentExercise = null;
         this.phase = 0;
         this.animationFrame = null;
@@ -12,28 +13,21 @@ class AnimationManager {
         this.maxScale = 5;
         this.lastPhaseType = null;
         this.cycleCount = 0;
+        this.elapsedTime = 0;
+        this.lastScale = 1;
+        this.lastOpacity = 1;
     }
 
     updateInstruction() {
         const currentPhase = this.exercises[this.currentExercise].phases[this.phase];
         const instruction = document.getElementById('breather-extension-instruction');
         if (instruction) {
-          instruction.textContent = currentPhase.instruction;
+            instruction.textContent = currentPhase.instruction;
         }
     }
 
     breathingAnimation(timestamp) {
-        if (!this.isExerciseActive) {
-            console.log('Breathing animation stopped');
-            return;
-        }
-
-        const circle = document.getElementById('breather-extension-circle');
-        const instruction = document.getElementById('breather-extension-instruction');
-        const countdownTimer = document.getElementById('breather-extension-timer');
-
-        if (!circle || !instruction || !countdownTimer) {
-            console.error('Required elements not found in DOM');
+        if (!this.isExerciseActive || this.isPaused) {
             return;
         }
 
@@ -42,86 +36,61 @@ class AnimationManager {
         }
 
         const elapsed = timestamp - this.lastTimestamp;
+        this.elapsedTime += elapsed;
+
         const currentPhase = this.exercises[this.currentExercise].phases[this.phase];
         const phaseDuration = currentPhase.duration;
-        const progress = Math.min(elapsed / phaseDuration, 1);
+        const progress = Math.min(this.elapsedTime / phaseDuration, 1);
 
-        // Update circle animation
-        this.currentScale = this.getCircleScale(currentPhase.type, progress);
-        circle.style.transform = `scale(${this.currentScale})`;
-        circle.style.opacity = currentPhase.type === 'inhale' ? 0.8 + (0.2 * progress) : 1 - (0.3 * progress);
-
-        // Update instruction and countdown
-        instruction.textContent = currentPhase.instruction;
-        const remaining = Math.ceil((phaseDuration - elapsed) / 1000);
-        countdownTimer.textContent = remaining > 0 ? `${remaining}` : '';
-
-        this.updateInstruction();
+        this.updateCircleAnimation(currentPhase, progress);
+        this.updateCountdown(phaseDuration - this.elapsedTime);
 
         if (progress < 1) {
-          this.animationFrame = requestAnimationFrame(this.breathingAnimation.bind(this));
+            this.animationFrame = requestAnimationFrame(this.breathingAnimation.bind(this));
         } else {
-          this.lastPhaseType = currentPhase.type;
-          this.phase = (this.phase + 1) % this.exercises[this.currentExercise].phases.length;
-          if (this.phase === 0) {
-            this.cycleCount++;
-            this.updateCycleCount();
-          }
-          this.lastTimestamp = timestamp;
-          this.breathingAnimation(timestamp);
+            this.moveToNextPhase(timestamp);
+        }
+
+        this.lastTimestamp = timestamp;
+    }
+
+    updateCircleAnimation(currentPhase, progress) {
+        const circle = document.getElementById('breather-extension-circle');
+        if (circle) {
+            const newScale = this.getCircleScale(currentPhase.type, progress);
+            const newOpacity = currentPhase.type === 'inhale' ? 0.8 + (0.2 * progress) : 1 - (0.3 * progress);
+
+            if (Math.abs(newScale - this.lastScale) > 0.01 || Math.abs(newOpacity - this.lastOpacity) > 0.01) {
+                circle.style.transform = `scale(${newScale})`;
+                circle.style.opacity = newOpacity;
+                this.lastScale = newScale;
+                this.lastOpacity = newOpacity;
+            }
         }
     }
 
-
-    breathingAnimation(timestamp) {
-        if (!this.isExerciseActive) {
-            console.log('Breathing animation stopped');
-            return;
-        }
-
-        const circle = document.getElementById('breather-extension-circle');
-        const instruction = document.getElementById('breather-extension-instruction');
+    updateCountdown(remainingTime) {
         const countdownTimer = document.getElementById('breather-extension-timer');
-
-        if (!circle || !instruction || !countdownTimer) {
-            console.error('Required elements not found in DOM');
-            return;
+        if (countdownTimer) {
+            const remaining = Math.ceil(remainingTime / 1000);
+            if (remaining !== parseInt(countdownTimer.textContent)) {
+                countdownTimer.textContent = remaining > 0 ? `${remaining}` : '';
+            }
         }
+    }
 
-        if (!this.lastTimestamp) {
-            this.lastTimestamp = timestamp;
-        }
-
-        const elapsed = timestamp - this.lastTimestamp;
-        const currentPhase = this.exercises[this.currentExercise].phases[this.phase];
-        const phaseDuration = currentPhase.duration;
-        const progress = Math.min(elapsed / phaseDuration, 1);
-
-        // Update circle animation
-        this.currentScale = this.getCircleScale(currentPhase.type, progress);
-        circle.style.transform = `scale(${this.currentScale})`;
-        circle.style.opacity = currentPhase.type === 'inhale' ? 0.8 + (0.2 * progress) : 1 - (0.3 * progress);
-
-        // Update instruction and countdown
-        instruction.textContent = currentPhase.instruction;
-        const remaining = Math.ceil((phaseDuration - elapsed) / 1000);
-        countdownTimer.textContent = remaining > 0 ? `${remaining}` : '';
-
-        this.updateInstruction();
-
-        if (progress < 1) {
-          this.animationFrame = requestAnimationFrame(this.breathingAnimation.bind(this));
-        } else {
-          this.lastPhaseType = currentPhase.type;
-          this.phase = (this.phase + 1) % this.exercises[this.currentExercise].phases.length;
-          if (this.phase === 0) {
+    moveToNextPhase(timestamp) {
+        this.lastPhaseType = this.exercises[this.currentExercise].phases[this.phase].type;
+        this.phase = (this.phase + 1) % this.exercises[this.currentExercise].phases.length;
+        if (this.phase === 0) {
             this.cycleCount++;
             this.updateCycleCount();
-          }
-          this.lastTimestamp = timestamp;
-          this.breathingAnimation(timestamp);
         }
-      }
+        this.elapsedTime = 0;
+        this.lastTimestamp = timestamp;
+        this.updateInstruction();
+        this.animationFrame = requestAnimationFrame(this.breathingAnimation.bind(this));
+    }
 
     getCircleScale(phaseType, progress) {
         switch (phaseType) {
@@ -130,7 +99,6 @@ class AnimationManager {
             case 'exhale':
                 return this.maxScale - (this.maxScale - this.minScale) * progress;
             case 'hold':
-                // Maintain the scale from the end of the previous phase
                 return this.lastPhaseType === 'inhale' ? this.maxScale : this.minScale;
             default:
                 return 1;
@@ -140,37 +108,44 @@ class AnimationManager {
     startAnimation(exercise) {
         this.currentExercise = exercise;
         this.isExerciseActive = true;
+        this.isPaused = false;
         this.phase = 0;
         this.lastTimestamp = 0;
         this.lastPhaseType = null;
+        this.elapsedTime = 0;
         this.resetCircle();
-        this.animationFrame = requestAnimationFrame(this.breathingAnimation.bind(this));
         this.cycleCount = 0;
         this.updateCycleCount();
+        this.updateInstruction();
+        this.animationFrame = requestAnimationFrame(this.breathingAnimation.bind(this));
         console.log('AnimationManager.startAnimation called');
     }
 
     stopAnimation() {
         console.log('AnimationManager.stopAnimation called');
         this.isExerciseActive = false;
+        this.isPaused = false;
         if (this.animationFrame) {
             cancelAnimationFrame(this.animationFrame);
         }
         this.resetCircle();
-        this.updateUI('Click Start to begin', '');
+        this.updateUI('Click Start', '');
         this.cycleCount = 0;
         this.updateCycleCount();
     }
 
-    changeExercise(exercise) {
-        this.currentExercise = exercise;
-        this.phase = 0;
-        this.lastPhaseType = null;
-        this.resetCircle();
-        this.updateCycleCount();
-        this.updateInstruction();
-        if (this.isExerciseActive) {
-          this.breathingAnimation(performance.now());
+    pauseAnimation() {
+        this.isPaused = true;
+        if (this.animationFrame) {
+            cancelAnimationFrame(this.animationFrame);
+        }
+    }
+
+    resumeAnimation() {
+        if (this.isExerciseActive && this.isPaused) {
+            this.isPaused = false;
+            this.lastTimestamp = 0;
+            this.animationFrame = requestAnimationFrame(this.breathingAnimation.bind(this));
         }
     }
 
@@ -195,10 +170,15 @@ class AnimationManager {
     }
 
     updateCycleCount() {
-        const infoElement = document.getElementById('breather-extension-info');
-        if (infoElement) {
-            const exerciseName = this.exercises[this.currentExercise].name;
-            infoElement.textContent = `${this.cycleCount}x ${exerciseName} ${this.cycleCount === 1 ? 'cycle' : 'cycles'}`;
+        if (this.cycleCount >= 3) {
+            this.stopAnimation();
+            if (typeof window.showFinalScore === 'function') {
+                window.showFinalScore();
+            }
+        } else {
+            if (typeof window.updateCycleDisplay === 'function') {
+                window.updateCycleDisplay();
+            }
         }
     }
 }

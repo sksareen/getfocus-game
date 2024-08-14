@@ -15,28 +15,71 @@
     <meta name="twitter:title" content="Breathe Easy: Your Personal Breathing Exercise Assistant">
     <meta name="twitter:description" content="Improve your focus and reduce stress with guided breathing exercises.">
     <link rel="stylesheet" href="styles.css">
+    <link rel="stylesheet" href="//fonts.googleapis.com/css?family=Google+Sans:400,500|Roboto:400,400italic,500,500italic,700,700italic|Roboto+Mono:400,500,700&amp;display=swap">
     <link rel="icon" href="icon.png" type="image/png">
 </head>
 <body>
-    <h2>Breathe Easy</h2>
+    <div id="focusTitle">GetFocus</div>
+    <div id="focusSubtitle">Can you focus for 48 seconds?</div>
 
     <div id="link">
-        <a href="https://getfocus.ai/breathe" target="_blank">Learn More</a>
+        <a href="https://getfocus.ai/breathe" target="_blank">Made by Savar</a>
     </div>
 
-    <div id="app"></div>
+    <div id="app">
+        <div id="breather-extension-overlay">
+            <div id="breather-extension-content">
+                <div class="circle-container">
+                    <div id="breather-extension-circle"></div>
+                    <div id="breather-extension-outline-circle-small"></div>
+                    <div id="breather-extension-outline-circle-big"></div>
+                </div>
 
-    <footer>
-        <p>&copy; 2024 GetFocus</p>
-    </footer>
+                <div id="breather-extension-instruction"></div>
+                <div id="breather-extension-timer"></div>
 
+                <button id="breather-extension-toggle-button">Start</button>
+
+                <!--
+                 <div id="focusIndicator">Focus Status</div>
+                -->
+                <div id="points-display"></div>
+                <div id="cycle-display"></div>
+            </div>
+
+            <div class="controls-container">
+                <div class="toggle-container">
+                    <span class="text-label">Dark Mode</span>
+                    <label class="toggle-switch">
+                        <input type="checkbox" id="dark-mode-toggle">
+                        <span class="toggle-slider"></span>
+                    </label>
+                </div>
+
+                <div class="toggle-container" id="video-toggle">
+                    <span class="text-label">Toggle Video Preview</span>
+                    <label class="toggle-switch">
+                        <input type="checkbox" id="eye-tracking-toggle" checked>
+                        <span class="toggle-slider"></span>
+                    </label>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div id="countdown-overlay">
+        <div id="countdown-message">Breathe out to get ready</div>
+        <div id="countdown-timer"></div>
+    </div>
+
+    <!-- <footer>© 2024 GetFocus</footer> -->
+
+    <audio id="chimeSound" src="chime.mp3"></audio>
+
+    <script src="https://webgazer.cs.brown.edu/webgazer.js"></script>
+    <script src="eyeTracking.js"></script>
     <script src="animationManager.js"></script>
-    <script src="breatherUI.js"></script>
     <script src="app.js"></script>
-    <script>
-        !function(t,e){var o,n,p,r;e.__SV||(window.posthog=e,e._i=[],e.init=function(i,s,a){function g(t,e){var o=e.split(".");2==o.length&&(t=t[o[0]],e=o[1]),t[e]=function(){t.push([e].concat(Array.prototype.slice.call(arguments,0)))}}(p=t.createElement("script")).type="text/javascript",p.async=!0,p.src=s.api_host.replace(".i.posthog.com","-assets.i.posthog.com")+"/static/array.js",(r=t.getElementsByTagName("script")[0]).parentNode.insertBefore(p,r);var u=e;for(void 0!==a?u=e[a]=[]:a="posthog",u.people=u.people||[],u.toString=function(t){var e="posthog";return"posthog"!==a&&(e+="."+a),t||(e+=" (stub)"),e},u.people.toString=function(){return u.toString(1)+".people (stub)"},o="capture identify alias people.set people.set_once set_config register register_once unregister opt_out_capturing has_opted_out_capturing opt_in_capturing reset isFeatureEnabled onFeatureFlags getFeatureFlag getFeatureFlagPayload reloadFeatureFlags group updateEarlyAccessFeatureEnrollment getEarlyAccessFeatures getActiveMatchingSurveys getSurveys getNextSurveyStep onSessionId setPersonProperties".split(" "),n=0;n<o.length;n++)g(u,o[n]);e._i.push([i,s,a])},e.__SV=1)}(document,window.posthog||[]);
-        posthog.init('phc_i6WR7pcKTMfCE1qKskuqJmV6UUHH60OsTgtSKSatesF',{api_host:'https://us.i.posthog.com', person_profiles: 'identified_only' // or 'always' to create profiles for anonymous users as well
-            })
-    </script>
+
 </body>
 </html>
