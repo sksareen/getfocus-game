@@ -1,3 +1,4 @@
+// Initialize the exercises object with the Box Breathing exercise
 window.exercises = {
   anxiety: { 
     name: `Box Breathing`, 
@@ -10,12 +11,15 @@ window.exercises = {
   }
 };
 
+// Initialize variables for managing the breathing exercise
 let isExerciseActive = false;
+let isCountingDown = false;
 let animationManager;
 let currentExercise = 'anxiety';
 let eyeTrackingManager;
 let countdownInterval;
 
+// Define a storage object for managing local storage
 const storage = {
   get: (keys, callback) => {
       const result = {};
@@ -31,9 +35,11 @@ const storage = {
   }
 };
 
+// Initialize the application when the DOMContentLoaded event is fired
 function initializeApp() {
   console.log('Initializing app');
 
+  // Get the dark mode preference from local storage and update the UI accordingly
   storage.get(['darkMode'], (result) => {
       if (result.darkMode !== undefined) {
           document.getElementById('dark-mode-toggle').checked = result.darkMode;
@@ -41,38 +47,45 @@ function initializeApp() {
       }
   });
 
+  // Initialize the eye tracking manager
   eyeTrackingManager = new EyeTrackingManager();
 
+  // Wait for 1 second before initializing the eye tracking manager
   setTimeout(() => {
       eyeTrackingManager.init();
   }, 1000);
 
+  // Initialize the animation manager
   animationManager = new AnimationManager(document.getElementById('app'), window.exercises);
   
+  // Add event listeners for the toggle button, dark mode toggle, and eye tracking toggle
   document.getElementById('breather-extension-toggle-button').addEventListener('click', toggleBreathing);
   document.getElementById('dark-mode-toggle').addEventListener('change', toggleDarkMode);
   document.getElementById('eye-tracking-toggle').addEventListener('change', toggleEyeTracking);
   document.addEventListener('keydown', handleKeyPress);
 
+  // Update the cycle display
   updateCycleDisplay();
-
 }
 
+// Handle key press events
 function handleKeyPress(event) {
   if (event.code === 'Space') {
       event.preventDefault();
       toggleBreathing();
   } else if (event.code === 'Escape') {
-      const countdownOverlay = document.getElementById('countdown-overlay');
-      if (countdownOverlay.classList.contains('visible')) {
-          clearInterval(countdownInterval);
-          countdownOverlay.classList.remove('visible');
+      if (isCountingDown) {
+          cancelCountdown();
+      } else if (isExerciseActive) {
           stopExercise();
       }
   }
 }
 
+// Start the breathing exercise
 function startExercise() {
+  if (isExerciseActive || isCountingDown) return;
+
   console.log('Starting exercise');
   const toggleButton = document.getElementById('breather-extension-toggle-button');
   toggleButton.disabled = true;
@@ -82,6 +95,9 @@ function startExercise() {
   const countdownTimer = document.getElementById('countdown-timer');
   
   countdownOverlay.classList.add('visible');
+  isCountingDown = true;
+
+  eyeTrackingManager.resetPoints();
   
   countdownInterval = setInterval(() => {
       if (countdown > 0) {
@@ -94,6 +110,7 @@ function startExercise() {
           toggleButton.className = 'stop pulsing';
           toggleButton.disabled = false;
           isExerciseActive = true;
+          isCountingDown = false;
           if (animationManager) {
               animationManager.startAnimation(currentExercise);
           }
@@ -108,10 +125,12 @@ function startExercise() {
       }
   }, 1000);
   updateCycleDisplay();
-  
 }
 
+// Stop the breathing exercise
 function stopExercise() {
+  if (!isExerciseActive) return;
+
   console.log('Stopping exercise');
   isExerciseActive = false;
   if (animationManager) {
@@ -123,9 +142,18 @@ function stopExercise() {
   updateToggleButton('Start');
   updateCycleDisplay();
   showFinalScore();
-
 }
 
+// Cancel the countdown
+function cancelCountdown() {
+  clearInterval(countdownInterval);
+  const countdownOverlay = document.getElementById('countdown-overlay');
+  countdownOverlay.classList.remove('visible');
+  isCountingDown = false;
+  updateToggleButton('Start');
+}
+
+// Update the cycle display
 function updateCycleDisplay() {
   const cycleDisplay = document.getElementById('cycle-display');
   cycleDisplay.innerHTML = '';
@@ -136,11 +164,13 @@ function updateCycleDisplay() {
   }
 }
 
+// Show the final score
 function showFinalScore() {
   const pointsDisplay = document.getElementById('points-display');
   pointsDisplay.textContent = `Final Score: ${eyeTrackingManager.getPoints()} points`;
 }
 
+// Update the toggle button text and class
 function updateToggleButton(text) {
   const toggleButton = document.getElementById('breather-extension-toggle-button');
   if (toggleButton) {
@@ -149,7 +179,10 @@ function updateToggleButton(text) {
   }
 }
 
+// Toggle the breathing exercise
 function toggleBreathing() {
+  if (isCountingDown) return;
+
   if (isExerciseActive) {
     stopExercise();
   } else {
@@ -157,12 +190,14 @@ function toggleBreathing() {
   }
 }
 
+// Toggle the dark mode
 function toggleDarkMode() {
   const isDarkMode = document.getElementById('dark-mode-toggle').checked;
   document.body.classList.toggle('dark-mode', isDarkMode);
   storage.set({ darkMode: isDarkMode });
 }
 
+// Toggle the eye tracking video
 function toggleEyeTracking(event) {
   const isVideoVisible = event.target.checked;
   if (eyeTrackingManager) {
@@ -173,6 +208,7 @@ function toggleEyeTracking(event) {
   }
 }
 
+// Update the focus indicator text and class
 function updateFocusIndicator(status) {
   const focusIndicator = document.getElementById('focusIndicator');
   if (focusIndicator) {
@@ -181,5 +217,8 @@ function updateFocusIndicator(status) {
   }
 }
 
+// Make stopExercise function globally accessible
+window.stopExercise = stopExercise;
 
+// Initialize the application when the DOMContentLoaded event is fired
 document.addEventListener('DOMContentLoaded', initializeApp);

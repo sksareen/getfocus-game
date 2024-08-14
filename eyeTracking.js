@@ -1,27 +1,72 @@
 class EyeTrackingManager {
+    /**
+     * Constructor
+     */
     constructor() {
+        /**
+         * Calibration status
+         */
         this.isCalibrated = false;
+        /**
+         * Tracking status
+         */
         this.isTracking = false;
+        /**
+         * Distraction threshold
+         */
         this.distractionThreshold = 0.15;
+        /**
+         * Last distraction time
+         */
         this.lastDistractionTime = null;
+        /**
+         * Total focused time
+         */
         this.focusedTime = 0;
+        /**
+         * Total points
+         */
         this.points = 0;
+        /**
+         * Calibration points
+         */
         this.calibrationPoints = [
             { x: "10%", y: "10%" }, { x: "50%", y: "10%" }, { x: "90%", y: "10%" },
             { x: "10%", y: "50%" }, { x: "50%", y: "50%" }, { x: "90%", y: "50%" },
             { x: "10%", y: "90%" }, { x: "50%", y: "90%" }, { x: "90%", y: "90%" }
         ];
+        /**
+         * Consecutive focused frames
+         */
         this.consecutiveFocusedFrames = 0;
+        /**
+         * Consecutive distraction frames
+         */
         this.consecutiveDistractionFrames = 0;
+        /**
+         * Last point time
+         */
         this.lastPointTime = 0;
 
     }
 
+    resetPoints() {
+        this.points = 0;
+        this.updatePointsDisplay();
+    }
+
+    /**
+     * Initialize WebGazer
+     */
     init() {
         webgazer.setGazeListener(() => {}).begin();
         webgazer.showVideoPreview(true).showPredictionPoints(true).applyKalmanFilter(true);
     }
 
+    /**
+     * Start calibration
+     * @param {function} callback Callback function
+     */
     startCalibration(callback) {
         const calibrationArea = document.getElementById("calibrationArea");
         const calibrationDot = document.getElementById("calibrationDot");
@@ -50,6 +95,10 @@ class EyeTrackingManager {
         showNextPoint();
     }
 
+    /**
+     * End calibration
+     * @param {function} callback Callback function
+     */
     endCalibration(callback) {
         document.getElementById("calibrationArea").style.display = "none";
         this.isCalibrated = true;
@@ -57,6 +106,9 @@ class EyeTrackingManager {
         if (callback) callback();
     }
 
+    /**
+     * Start tracking
+     */
     startTracking() {
         if (!this.isTracking) {
             this.isTracking = true;
@@ -64,11 +116,19 @@ class EyeTrackingManager {
         }
     }
 
+    /**
+     * Stop tracking
+     */
     stopTracking() {
         this.isTracking = false;
         webgazer.clearGazeListener();
     }
 
+    /**
+     * Gaze listener
+     * @param {object} data Gaze data
+     * @param {number} elapsedTime Elapsed time
+     */
     gazeListener(data, elapsedTime) {
         if (data == null || !this.isTracking) return;
 
@@ -98,6 +158,10 @@ class EyeTrackingManager {
         }
     }
 
+    /**
+     * Update focus status
+     * @param {boolean} isDistracted Is distracted
+     */
     updateFocusStatus(isDistracted) {
         const focusIndicator = document.getElementById("focusIndicator");
         if (focusIndicator) {
@@ -112,6 +176,11 @@ class EyeTrackingManager {
         }
     }
 
+    /**
+     * Update points
+     * @param {boolean} isDistracted Is distracted
+     * @param {number} elapsedTime Elapsed time
+     */
     updatePoints(isDistracted, elapsedTime) {
         if (!isDistracted) {
           const currentTime = Date.now();
@@ -123,6 +192,9 @@ class EyeTrackingManager {
         }
       }
     
+      /**
+       * Update points display
+       */
       updatePointsDisplay() {
         const pointsDisplay = document.getElementById("points-display");
         if (pointsDisplay) {
@@ -130,14 +202,26 @@ class EyeTrackingManager {
         }
       }
 
+    /**
+     * Get points
+     * @returns {number} Points
+     */
     getPoints() {
         return this.points;
     }
 
+    /**
+     * Set distraction threshold
+     * @param {number} threshold Distraction threshold
+     */
     setDistractionThreshold(threshold) {
         this.distractionThreshold = threshold;
     }
 
+    /**
+     * Toggle video
+     * @param {boolean} isVisible Is visible
+     */
     toggleVideo(isVisible) {
         const elements = ['webgazerVideoContainer', 'webgazerVideoFeed', 'webgazerFaceOverlay', 'webgazerFaceFeedbackBox'];
         elements.forEach(id => {

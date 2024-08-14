@@ -111,7 +111,7 @@ footer {
 }
 
 #breather-extension-timer {
-  bottom: 55%;
+  bottom: 56%;
   font-size: clamp(3.5vh, 3vw, 3vh);
   font-weight: bold;
   z-index: 9999;
@@ -301,8 +301,6 @@ input:checked + .toggle-slider:before {
   color: #333;
   transition: all 0.3s ease;
 }
-
-/* ... (keep other styles) ... */
 
 /* Dark mode styles */
 body.dark-mode {

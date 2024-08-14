@@ -1,4 +1,6 @@
 class AnimationManager {
+    // The constructor initializes the AnimationManager with the container
+    // element and the exercises object.
     constructor(container, exercises) {
         this.container = container;
         this.exercises = exercises;
@@ -18,6 +20,7 @@ class AnimationManager {
         this.lastOpacity = 1;
     }
 
+    // This method updates the instruction displayed on the screen.
     updateInstruction() {
         const currentPhase = this.exercises[this.currentExercise].phases[this.phase];
         const instruction = document.getElementById('breather-extension-instruction');
@@ -26,6 +29,8 @@ class AnimationManager {
         }
     }
 
+    // This method is the main animation loop. It is called every frame
+    // and updates the animation state.
     breathingAnimation(timestamp) {
         if (!this.isExerciseActive || this.isPaused) {
             return;
@@ -42,18 +47,25 @@ class AnimationManager {
         const phaseDuration = currentPhase.duration;
         const progress = Math.min(this.elapsedTime / phaseDuration, 1);
 
+        // Update the circle animation
         this.updateCircleAnimation(currentPhase, progress);
+
+        // Update the countdown timer
         this.updateCountdown(phaseDuration - this.elapsedTime);
 
+        // If the phase is not finished, schedule the next frame
         if (progress < 1) {
             this.animationFrame = requestAnimationFrame(this.breathingAnimation.bind(this));
         } else {
+            // Otherwise, move to the next phase
             this.moveToNextPhase(timestamp);
         }
 
         this.lastTimestamp = timestamp;
     }
 
+    // This method updates the circle animation based on the current phase
+    // and progress.
     updateCircleAnimation(currentPhase, progress) {
         const circle = document.getElementById('breather-extension-circle');
         if (circle) {
@@ -69,6 +81,7 @@ class AnimationManager {
         }
     }
 
+    // This method updates the countdown timer displayed on the screen.
     updateCountdown(remainingTime) {
         const countdownTimer = document.getElementById('breather-extension-timer');
         if (countdownTimer) {
@@ -79,6 +92,7 @@ class AnimationManager {
         }
     }
 
+    // This method moves to the next phase of the exercise.
     moveToNextPhase(timestamp) {
         this.lastPhaseType = this.exercises[this.currentExercise].phases[this.phase].type;
         this.phase = (this.phase + 1) % this.exercises[this.currentExercise].phases.length;
@@ -92,6 +106,8 @@ class AnimationManager {
         this.animationFrame = requestAnimationFrame(this.breathingAnimation.bind(this));
     }
 
+    // This method returns the scale of the circle for the given phase type
+    // and progress.
     getCircleScale(phaseType, progress) {
         switch (phaseType) {
             case 'inhale':
@@ -105,6 +121,7 @@ class AnimationManager {
         }
     }
 
+    // This method starts the animation.
     startAnimation(exercise) {
         this.currentExercise = exercise;
         this.isExerciseActive = true;
@@ -121,6 +138,7 @@ class AnimationManager {
         console.log('AnimationManager.startAnimation called');
     }
 
+    // This method stops the animation.
     stopAnimation() {
         console.log('AnimationManager.stopAnimation called');
         this.isExerciseActive = false;
@@ -134,6 +152,7 @@ class AnimationManager {
         this.updateCycleCount();
     }
 
+    // This method pauses the animation.
     pauseAnimation() {
         this.isPaused = true;
         if (this.animationFrame) {
@@ -141,6 +160,7 @@ class AnimationManager {
         }
     }
 
+    // This method resumes the animation.
     resumeAnimation() {
         if (this.isExerciseActive && this.isPaused) {
             this.isPaused = false;
@@ -149,6 +169,7 @@ class AnimationManager {
         }
     }
 
+    // This method resets the circle animation.
     resetCircle() {
         const countdownTimer = document.getElementById('breather-extension-timer');
         if (countdownTimer) {
@@ -162,6 +183,7 @@ class AnimationManager {
         }
     }
 
+    // This method updates the UI with the given instruction and countdown.
     updateUI(instruction, countdown) {
         const instructionEl = document.getElementById('breather-extension-instruction');
         const countdownEl = document.getElementById('breather-extension-timer');
@@ -169,11 +191,16 @@ class AnimationManager {
         if (countdownEl) countdownEl.textContent = countdown;
     }
 
+    // This method updates the cycle count and displays the final score when
+    // the exercise is finished.
     updateCycleCount() {
         if (this.cycleCount >= 3) {
             this.stopAnimation();
             if (typeof window.showFinalScore === 'function') {
                 window.showFinalScore();
+            }
+            if (typeof window.stopExercise === 'function') {
+                window.stopExercise();
             }
         } else {
             if (typeof window.updateCycleDisplay === 'function') {
@@ -184,3 +211,4 @@ class AnimationManager {
 }
 
 window.AnimationManager = AnimationManager;
+
