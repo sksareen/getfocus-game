@@ -1,222 +1,185 @@
 window.exercises = {
-  sleep: { 
-    name: '4-7-8 Breathing', 
-    phases: [
-      { duration: 4000, instruction: 'breathe in', type: 'inhale' },
-      { duration: 7000, instruction: 'hold', type: 'hold' },
-      { duration: 8000, instruction: 'breathe out', type: 'exhale' },
-      { duration: 1000, instruction: 'pause', type: 'hold' }
-    ]   
-  },
   anxiety: { 
-    name: 'Box Breathing', 
+    name: `Box Breathing`, 
     phases: [
-      { duration: 4000, instruction: 'breathe in', type: 'inhale' },
-      { duration: 4000, instruction: 'hold', type: 'hold' },
-      { duration: 4000, instruction: 'breathe out', type: 'exhale' },
-      { duration: 4000, instruction: 'hold', type: 'hold' }
-    ]
-  },
-  focus: { 
-    name: 'Alternate Nostril', 
-    phases: [
-      { duration: 4000, instruction: 'Inhale through left nostril', type: 'inhale' },
-      { duration: 4000, instruction: 'Hold, close both nostrils', type: 'hold' },
-      { duration: 4000, instruction: 'Exhale through right nostril', type: 'exhale' },
-      { duration: 4000, instruction: 'Inhale through right nostril', type: 'inhale' },
-      { duration: 4000, instruction: 'Hold, close both nostrils', type: 'hold' },
-      { duration: 4000, instruction: 'Exhale through left nostril', type: 'exhale' }
+        { duration: 4000, instruction: 'breathe in', type: 'inhale' },
+        { duration: 4000, instruction: 'hold', type: 'hold' },
+        { duration: 4000, instruction: 'breathe out', type: 'exhale' },
+        { duration: 4000, instruction: 'hold', type: 'hold' }
     ]
   }
 };
 
-let breatherUI;
-let isOverlayVisible = true;
 let isExerciseActive = false;
 let animationManager;
-let currentExercise = 'sleep';
+let currentExercise = 'anxiety';
+let eyeTrackingManager;
+let countdownInterval;
 
 const storage = {
   get: (keys, callback) => {
-    const result = {};
-    keys.forEach(key => {
-      result[key] = JSON.parse(localStorage.getItem(key)) || null;
-    });
-    callback(result);
+      const result = {};
+      keys.forEach(key => {
+          result[key] = JSON.parse(localStorage.getItem(key)) || null;
+      });
+      callback(result);
   },
   set: (data) => {
-    Object.keys(data).forEach(key => {
-      localStorage.setItem(key, JSON.stringify(data[key]));
-    });
+      Object.keys(data).forEach(key => {
+          localStorage.setItem(key, JSON.stringify(data[key]));
+      });
   }
 };
 
-
 function initializeApp() {
   console.log('Initializing app');
-  const appContainer = document.getElementById('app');
-  if (!appContainer) {
-    console.error('App container not found');
-    return;
-  }
-  breatherUI = createBreatherUI();  // Assign to breatherUI variable
-  if (breatherUI) {
-    appContainer.appendChild(breatherUI);
-  } else {
-    console.error('Failed to create breatherUI');
-    return;
-  }
-  animationManager = new AnimationManager(appContainer, window.exercises);
-  document.addEventListener('breatherStopped', stopExercise);
-  document.addEventListener('breatherClosed', stopExerciseAndHideOverlay);
-  document.addEventListener('breatherToggled', toggleExercise);
 
-  storage.get(['isOverlayVisible', 'isExerciseActive', 'currentExercise'], (result) => {
-    isOverlayVisible = result.isOverlayVisible !== null ? result.isOverlayVisible : true;
-    isExerciseActive = false; // Always start in stopped state
-    currentExercise = result.currentExercise || 'sleep';
-    updateUIState();
-    showOverlay(); // Show the overlay initially
+  storage.get(['darkMode'], (result) => {
+      if (result.darkMode !== undefined) {
+          document.getElementById('dark-mode-toggle').checked = result.darkMode;
+          document.body.classList.toggle('dark-mode', result.darkMode);
+      }
   });
 
-  storage.get(['colorTheme', 'showWords'], (result) => {
-    if (result.colorTheme) {
-      updateColorTheme(result.colorTheme);
-    }
-    if (result.showWords !== undefined) {
-      document.getElementById('showWordsCheckbox').checked = result.showWords;
-      toggleInstructions();
-    }
-  });
+  eyeTrackingManager = new EyeTrackingManager();
+
+  setTimeout(() => {
+      eyeTrackingManager.init();
+  }, 1000);
+
+  animationManager = new AnimationManager(document.getElementById('app'), window.exercises);
+  
+  document.getElementById('breather-extension-toggle-button').addEventListener('click', toggleBreathing);
+  document.getElementById('dark-mode-toggle').addEventListener('change', toggleDarkMode);
+  document.getElementById('eye-tracking-toggle').addEventListener('change', toggleEyeTracking);
+  document.addEventListener('keydown', handleKeyPress);
+
+  updateCycleDisplay();
+
 }
 
-function updateUIState() {
-  if (isOverlayVisible) {
-    showOverlay();
+function handleKeyPress(event) {
+  if (event.code === 'Space') {
+      event.preventDefault();
+      toggleBreathing();
+  } else if (event.code === 'Escape') {
+      const countdownOverlay = document.getElementById('countdown-overlay');
+      if (countdownOverlay.classList.contains('visible')) {
+          clearInterval(countdownInterval);
+          countdownOverlay.classList.remove('visible');
+          stopExercise();
+      }
   }
-  updateToggleButton(isExerciseActive ? 'Stop' : 'Start');
-}
-
-function updateState() {
-  storage.set({ isOverlayVisible, isExerciseActive, currentExercise });
-}
-
-function showOverlay() {
-  isOverlayVisible = true;
-  if (breatherUI) {
-    breatherUI.style.display = 'flex';
-    setTimeout(() => {
-      breatherUI.style.opacity = '1';
-    }, 10);
-  }
-  updateState();
-}
-
-function hideOverlay() {
-  isOverlayVisible = false;
-  if (breatherUI) {
-    breatherUI.style.opacity = '0';
-    setTimeout(() => {
-      breatherUI.style.display = 'none';
-    }, 300);
-  }
-  updateState();
 }
 
 function startExercise() {
-  isExerciseActive = true;
-  if (animationManager) {
-    animationManager.startAnimation(currentExercise);
-  }
-  updateToggleButton('Stop');
-  updateState();
+  console.log('Starting exercise');
+  const toggleButton = document.getElementById('breather-extension-toggle-button');
+  toggleButton.disabled = true;
+  let countdown = 3;
+  
+  const countdownOverlay = document.getElementById('countdown-overlay');
+  const countdownTimer = document.getElementById('countdown-timer');
+  
+  countdownOverlay.classList.add('visible');
+  
+  countdownInterval = setInterval(() => {
+      if (countdown > 0) {
+          countdownTimer.textContent = countdown;
+          countdown--;
+      } else {
+          clearInterval(countdownInterval);
+          countdownOverlay.classList.remove('visible');
+          toggleButton.textContent = 'Stop';
+          toggleButton.className = 'stop pulsing';
+          toggleButton.disabled = false;
+          isExerciseActive = true;
+          if (animationManager) {
+              animationManager.startAnimation(currentExercise);
+          }
+          if (eyeTrackingManager) {
+              eyeTrackingManager.startTracking();
+              if (animationManager) {
+                  animationManager.resumeAnimation();
+              }
+          } else {
+              console.warn('Eye tracking manager not initialized');
+          }
+      }
+  }, 1000);
+  updateCycleDisplay();
+  
 }
 
 function stopExercise() {
-  console.log('stopping animation');
+  console.log('Stopping exercise');
   isExerciseActive = false;
   if (animationManager) {
-    animationManager.stopAnimation();
-  } else {
-    console.error('AnimationManager not initialized');
+      animationManager.stopAnimation();
+  }
+  if (eyeTrackingManager) {
+      eyeTrackingManager.stopTracking();
   }
   updateToggleButton('Start');
-  updateState();
+  updateCycleDisplay();
+  showFinalScore();
+
 }
 
-function stopExerciseAndHideOverlay() {
-  isExerciseActive = false;
-  if (animationManager) {
-    animationManager.stopAnimation();
-  } else {
-    console.error('AnimationManager not initialized');
+function updateCycleDisplay() {
+  const cycleDisplay = document.getElementById('cycle-display');
+  cycleDisplay.innerHTML = '';
+  for (let i = 0; i < 3; i++) {
+    const dot = document.createElement('div');
+    dot.className = `cycle-dot ${i < animationManager.cycleCount ? 'completed' : ''}`;
+    cycleDisplay.appendChild(dot);
   }
-  document.dispatchEvent(new CustomEvent('exerciseStopped'));
-  updateState();
+}
+
+function showFinalScore() {
+  const pointsDisplay = document.getElementById('points-display');
+  pointsDisplay.textContent = `Final Score: ${eyeTrackingManager.getPoints()} points`;
 }
 
 function updateToggleButton(text) {
   const toggleButton = document.getElementById('breather-extension-toggle-button');
   if (toggleButton) {
-    toggleButton.className = text === 'Start' ? '' : 'stop';
+    toggleButton.className = text === 'Start' ? '' : 'stop pulsing';
     toggleButton.textContent = text;
   }
 }
 
-function toggleExercise() {
+function toggleBreathing() {
   if (isExerciseActive) {
     stopExercise();
   } else {
     startExercise();
   }
-  updateToggleButton(isExerciseActive ? 'Stop' : 'Start');
 }
 
-document.addEventListener('appAction', (event) => {
-  const request = event.detail;
-  console.log('Action received:', request);
+function toggleDarkMode() {
+  const isDarkMode = document.getElementById('dark-mode-toggle').checked;
+  document.body.classList.toggle('dark-mode', isDarkMode);
+  storage.set({ darkMode: isDarkMode });
+}
 
-  switch (request.action) {
-    case "startExercise":
-      currentExercise = request.exercise;
-      isOverlayVisible = true;
-      showOverlay();
-      requestAnimationFrame(() => {
-        setTimeout(() => {
-          startExercise();
-        }, 1000);
-      });
-      break;
-    case "stopExercise":
-      stopExercise();
-      break;
-    case "changeExercise":
-      if (animationManager) {
-        animationManager.changeExercise(request.exercise);
-      }
-      break;
-  }
-  updateState();
-});
-
-// Initialize the app when the DOM is loaded
-document.addEventListener('DOMContentLoaded', () => {
-  const appContainer = document.getElementById('app');
-  if (appContainer) {
-    initializeApp();
+function toggleEyeTracking(event) {
+  const isVideoVisible = event.target.checked;
+  if (eyeTrackingManager) {
+    eyeTrackingManager.toggleVideo(isVideoVisible);
   } else {
-    console.error('App container not found');
+    console.warn('Eye tracking manager not initialized');
+    event.target.checked = !isVideoVisible;
   }
-});
+}
 
-chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
-  if (request.action === "updateSettings") {
-    if (request.settings.colorTheme) {
-      updateColorTheme(request.settings.colorTheme);
-    }
-    if (request.settings.showWords !== undefined) {
-      document.getElementById('showWordsCheckbox').checked = request.settings.showWords;
-      toggleInstructions();
-    }
+function updateFocusIndicator(status) {
+  const focusIndicator = document.getElementById('focusIndicator');
+  if (focusIndicator) {
+    focusIndicator.textContent = status;
+    focusIndicator.className = status.toLowerCase();
   }
-});
+}
+
+
+document.addEventListener('DOMContentLoaded', initializeApp);
