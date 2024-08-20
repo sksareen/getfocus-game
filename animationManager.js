@@ -58,10 +58,19 @@ class AnimationManager {
             this.animationFrame = requestAnimationFrame(this.breathingAnimation.bind(this));
         } else {
             // Otherwise, move to the next phase
-            const audio = new Audio('block.mp3');
-            audio.play();
-            audio.volume = 0.15;
             this.moveToNextPhase(timestamp);
+                // Play different sounds based on odd/even phases
+                if ((this.phase + 1) % 4 === 1) {
+                    const audio = new Audio('breathein.mp3');
+                    audio.volume = 0.3;
+                    audio.play();
+
+                }
+                if ((this.phase + 1) % 4 === 3) {
+                    const audio = new Audio('breatheout.mp3');
+                    audio.volume = 0.15;
+                    audio.play();
+                }
         }
 
         this.lastTimestamp = timestamp;
@@ -107,6 +116,7 @@ class AnimationManager {
         this.lastTimestamp = timestamp;
         this.updateInstruction();
         this.animationFrame = requestAnimationFrame(this.breathingAnimation.bind(this));
+
     }
 
     // This method returns the scale of the circle for the given phase type
@@ -139,6 +149,9 @@ class AnimationManager {
         this.updateInstruction();
         this.animationFrame = requestAnimationFrame(this.breathingAnimation.bind(this));
         console.log('AnimationManager.startAnimation called');
+        const audio = new Audio('breathein.mp3');
+        audio.volume = 0.3;
+        audio.play();
     }
 
     // This method stops the animation.
