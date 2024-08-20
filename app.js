@@ -179,6 +179,13 @@ function updateToggleButton(text) {
   }
 }
 
+// Play the chime audio at 10% volume
+function playChime() {
+  const audio = new Audio('chime.mp3');
+  audio.volume = 0.1;
+  audio.play();
+}
+
 // Toggle the breathing exercise
 function toggleBreathing() {
   if (isCountingDown) return;

@@ -58,6 +58,9 @@ class AnimationManager {
             this.animationFrame = requestAnimationFrame(this.breathingAnimation.bind(this));
         } else {
             // Otherwise, move to the next phase
+            const audio = new Audio('chime.mp3');
+            audio.play();
+            audio.volume = 0.15;
             this.moveToNextPhase(timestamp);
         }
 
