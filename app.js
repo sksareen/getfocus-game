@@ -18,6 +18,7 @@ let animationManager;
 let currentExercise = 'anxiety';
 let eyeTrackingManager;
 let countdownInterval;
+let countdown = 3;
 
 // Define a storage object for managing local storage
 const storage = {
