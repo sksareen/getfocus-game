@@ -163,7 +163,7 @@ class AnimationManager {
             cancelAnimationFrame(this.animationFrame);
         }
         this.resetCircle();
-        this.updateUI('Click Start', '');
+        this.updateUI('press the button', '');
         this.cycleCount = 0;
         this.updateCycleCount();
     }

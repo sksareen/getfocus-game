@@ -126,8 +126,6 @@ footer {
   padding: 1px;
   border-radius: 50%;
   cursor: pointer;
-  box-shadow: 0 0 0.125em 0.125em rgba(0, 0, 0, 0.05);
-  background-color: #bcd7ef;
   transition: all 0.3s ease, background-color 0.3s ease, box-shadow 0.3s ease;
   display: flex;
   justify-content: center;
@@ -176,17 +174,18 @@ footer {
   cursor: pointer;
   border-radius: 100%;
   z-index: 99999;
-  background-color: #3498db;
+  background-color: #2ecc71;
   box-shadow:  0 0 10px 1.5vmin rgba(0, 0, 0, 0.05);
   transform: translate(-50%, -50%);
-  transition: all 0.3s ease;
+  transition: all 0.1s ease;
+  color: #00000000;
 }
 
 #breather-extension-toggle-button:hover {
   opacity: 0.9;
   transform: translate(-50%, -50%) scale(1.05);
-  box-shadow: 0 6px 8px rgba(0, 0, 0, 0.15);
-  transition: all 0.3s ease;
+  box-shadow: inset 6px rgba(0, 0, 0, 0.4);
+  transition: all 0.1s ease;
 }
 
 #breather-extension-toggle-button.stop {
@@ -368,7 +367,8 @@ body.dark-mode {
 }
 
 .dark-mode #breather-extension-toggle-button {
-  background-color: #8b4513;
+  background-color: #2ba520bd;
+  color: #00000000;
 }
 
 .dark-mode #breather-extension-toggle-button.stop {
@@ -540,6 +540,7 @@ body.dark-mode #link a {
   #breather-extension-toggle-button {
     font-size: 1rem;
     padding: 0.5rem 0rem;
+    color: #00000000;
   }
 
   #breather-extension-instruction {
