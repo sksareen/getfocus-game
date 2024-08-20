@@ -73,7 +73,7 @@ footer {
 }
 
 #breather-extension-circle {
-  background: #ffdf7c;
+  background: #2ecc70c8;
   transition: all 4s ease-in-out, background-color 0.3s ease;
   z-index: 3;
 }
@@ -189,7 +189,7 @@ footer {
 }
 
 #breather-extension-toggle-button.stop {
-  background-color: #e24e53;
+  background-color: #e85b28;
 }
 
 @keyframes pulse {
@@ -264,7 +264,7 @@ footer {
 }
 
 input:checked + .toggle-slider {
-  background-color: #2196F3;
+  background-color: #2ecc70b8;
 }
 
 input:checked + .toggle-slider:before {
@@ -328,7 +328,7 @@ input:checked + .toggle-slider:before {
 }
 
 #cycle-display .cycle-dot.completed {
-  background-color: #2196F3;
+  background-color: #2ecc70b8;
 }
 
 #points-display {
@@ -347,23 +347,28 @@ input:checked + .toggle-slider:before {
   transition: all 0.3s ease;
 }
 
-/* Dark mode styles */
+/* Dark mode styles */  
 body.dark-mode {
   color: #e0e0e0;
 }
 
+.dark-mode #focusTitle, .dark-mode #focusSubtitle {
+  color: #fff;
+  transition: all 0.3s ease;
+}
+
 .dark-mode #breather-extension-overlay {
-  background: #2c2420d4 !important;
+  background: #1e1612e6 !important;
   background: linear-gradient(135deg, #f0f5ff 0%, #e0eafc 100%);
 }
 
 .dark-mode #breather-extension-circle {
-  background: #8b4513;
+  background: #2196F3;
 }
 
 .dark-mode #breather-extension-outline-circle-small,
 .dark-mode #breather-extension-outline-circle-big {
-  background: #4a3c38;
+  background: #6e6c66;
 }
 
 .dark-mode #breather-extension-toggle-button {
@@ -412,14 +417,15 @@ body.dark-mode {
   top: 3%;
   left: 50%;
   margin: 0 auto;
-  color: #2196F3;
+  color: #0db854;
+  opacity: 0.8;
   z-index: 2147483659; /* Increased z-index to be above the overlay */
   text-align: center;
   transform: translateX(-50%);
   transition: all 0.3s ease;
 }
 
-#focusSubtitle {
+#focusSubtitle {  
   position: fixed;
   font-weight: 300;
   font-size: clamp(1.5rem, 2.5vw, 1.2rem);
@@ -427,7 +433,8 @@ body.dark-mode {
   left: 50%;
   margin: 0 auto;
   padding: 10px;
-  color: #1c7bc9;
+  color: #0db854;
+  opacity: 0.8;
   z-index: 2147483659; /* Increased z-index to be above the overlay */
   text-align: center;
   transform: translateX(-50%);
