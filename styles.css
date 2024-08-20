@@ -143,21 +143,21 @@ footer {
 }
 
 #breather-extension-timer:active {
-  animation: pulsate 1.5s ease-out;
+  animation: color 1.5s ease-out;
   animation-iteration-count: infinite;
 }
 
-@keyframes pulsate {
+@keyframes color {
   0% {
-    background-color: #bcd7ef;
+    color: #bcd7ef;
     box-shadow: 0 0 0.125em 0.125em rgba(0, 0, 0, 0.05);
   }
   50% {
-    background-color: #75d2a1;
+    color: #000;
     box-shadow: 0 0 0.25em 0.25em rgba(0, 0, 0, 0.1);
   }
   100% {
-    background-color: #bcd7ef;
+    color: #bcd7ef;
     box-shadow: 0 0 0.125em 0.125em rgba(0, 0, 0, 0.05);
   }
 }
@@ -343,6 +343,9 @@ input:checked + .toggle-slider:before {
   font-size: 1.1rem;
   font-weight: 500;
   color: #333;
+  font-weight: normal;
+  z-index: 9999;
+  opacity: 0.6;
   transition: all 0.3s ease;
 }
 

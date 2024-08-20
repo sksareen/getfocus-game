@@ -167,7 +167,9 @@ function updateCycleDisplay() {
 // Show the final score
 function showFinalScore() {
   const pointsDisplay = document.getElementById('points-display');
-  pointsDisplay.textContent = `Final Score: ${eyeTrackingManager.getPoints()} points`;
+  const percent = (100 - (eyeTrackingManager.points / 48 * 100)).toFixed(0);
+  pointsDisplay.textContent = `Focused: ${percent}%`;
+  // pointsDisplay.textContent = `Focused: ${(eyeTrackingManager.getPoints() / 48 * 100).toFixed(0)}`;
 }
 
 // Update the toggle button text and class

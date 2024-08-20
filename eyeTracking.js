@@ -198,7 +198,8 @@ class EyeTrackingManager {
       updatePointsDisplay() {
         const pointsDisplay = document.getElementById("points-display");
         if (pointsDisplay) {
-          pointsDisplay.textContent = `Points: ${this.points}`;
+          const percent = (100 - (this.points / 48 * 100)).toFixed(0);
+          pointsDisplay.textContent = `${percent}% focused`;
         }
       }
 
