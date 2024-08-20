@@ -113,7 +113,7 @@ footer {
 
 #breather-extension-timer {
   position: fixed;
-  bottom: 34%;
+  bottom: 36%;
   left: 50%;
   transform: translate(-50%, -30%);
   color: #fff;
@@ -334,8 +334,7 @@ input:checked + .toggle-slider:before {
 
 #points-display {
   position: absolute;
-  bottom: 11%;
-  top: auto;
+  bottom: 14%;
   left: 50%;
   transform: translateX(-50%);
   padding: 8px 16px;
@@ -344,7 +343,7 @@ input:checked + .toggle-slider:before {
   font-weight: 500;
   color: #333;
   font-weight: normal;
-  z-index: 9999;
+  z-index: 2147483648;
   opacity: 0.6;
   transition: all 0.3s ease;
 }
@@ -374,6 +373,7 @@ body.dark-mode {
 
 .dark-mode #breather-extension-toggle-button.stop {
   background-color: #e24e53;
+  color: #00000000;
 }
 
 /* Webgazer styles */
@@ -543,7 +543,7 @@ body.dark-mode #link a {
   }
 
   #breather-extension-instruction {
-    bottom: 55%;
+    bottom: 23%;
   }
 
   #breather-extension-timer {
@@ -561,11 +561,11 @@ body.dark-mode #link a {
   }
 
   .controls-container {
-    bottom: 8%;
+    bottom: 5%;
     top: auto;
     right: auto;
     left: 50%;
-    transform: translateX(-50%) scale(.9);
+    transform: translateX(-51%) scale(.75);
     flex-direction: row;
     justify-content: space-around;
     width: 70%;
@@ -603,6 +603,6 @@ body.dark-mode #link a {
   }
 
   #cycle-display {
-    bottom: 22%;
+    bottom: 13%;
   }
 }
