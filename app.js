@@ -168,7 +168,7 @@ function updateCycleDisplay() {
 function showFinalScore() {
   const pointsDisplay = document.getElementById('points-display');
   const percent = ((eyeTrackingManager.points / 48 * 100)).toFixed(0);
-  pointsDisplay.textContent = `Focused: ${100 - percent}%`;
+  pointsDisplay.textContent = `${percent}%`;
   // pointsDisplay.textContent = `Focused: ${(eyeTrackingManager.getPoints() / 48 * 100).toFixed(0)}`;
 }
 

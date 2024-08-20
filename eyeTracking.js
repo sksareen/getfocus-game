@@ -14,7 +14,7 @@ class EyeTrackingManager {
         /**
          * Distraction threshold
          */
-        this.distractionThreshold = 0.15;
+        this.distractionThreshold = 0.19;
         /**
          * Last distraction time
          */
@@ -199,7 +199,7 @@ class EyeTrackingManager {
         const pointsDisplay = document.getElementById("points-display");
         if (pointsDisplay) {
           const percent = ((this.points / 48 * 100)).toFixed(0);
-          pointsDisplay.textContent = `${100 - percent}% focused`;
+          pointsDisplay.textContent = `${percent}%`;
         }
       }
 
