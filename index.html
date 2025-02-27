@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI Study Buddy</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <div class="container">
+        <h1>AI Study Buddy</h1>
+        <canvas id="faceCanvas"></canvas>
+        <div class="webcam-container">
+            <video id="webcam" autoplay playsinline></video>
+        </div>
+        <div class="status-container">
+            <p id="status">Getting ready...</p>
+            <div id="timerDisplay" class="timer-display">25:00</div>
+        </div>
+        <div class="controls">
+            <button id="startButton">Start Studying</button>
+            <button id="stopButton" disabled>Stop</button>
+        </div>
+        <div class="timer-controls">
+            <div class="timer-settings">
+                <label for="workDuration">Focus time (min):</label>
+                <input type="number" id="workDuration" min="1" max="60" value="25">
+                <label for="breakDuration">Break time (min):</label>
+                <input type="number" id="breakDuration" min="1" max="30" value="5">
+            </div>
+            <div class="timer-buttons">
+                <button id="startTimerButton">Start Timer</button>
+                <button id="pauseTimerButton" disabled>Pause</button>
+                <button id="resetTimerButton">Reset</button>
+            </div>
+        </div>
+        <div id="distractionDialog" class="dialog hidden">
+            <button class="close-button">×</button>
+            <h2>Why were you distracted?</h2>
+            <textarea id="distractionReason" placeholder="Describe what distracted you..."></textarea>
+            <button id="submitDistraction">Submit</button>
+        </div>
+        <div id="breakDialog" class="dialog hidden">
+            <h2>Time for a break!</h2>
+            <p>You've completed a focus session. Take a short break to recharge.</p>
+            <button id="startBreakButton">Start Break</button>
+            <button id="skipBreakButton">Skip Break</button>
+        </div>
+        <audio id="chimeSound" src="https://assets.mixkit.co/active_storage/sfx/2869/2869-preview.mp3"></audio>
+        <audio id="timerCompleteSound" src="https://assets.mixkit.co/active_storage/sfx/1529/1529-preview.mp3"></audio>
+    </div>
+    <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@tensorflow-models/blazeface"></script>
+    <script src="script.js"></script>
+</body>
+</html> 

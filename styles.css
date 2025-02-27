@@ -1,0 +1,314 @@
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+}
+
+body {
+    background-color: #f5f5f5;
+    min-height: 100vh;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+.container {
+    background-color: white;
+    padding: 2rem;
+    border-radius: 1rem;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    width: 90%;
+    max-width: 600px;
+    text-align: center;
+}
+
+h1 {
+    color: #333;
+    margin-bottom: 1.5rem;
+}
+
+.webcam-container {
+    margin: 1rem 0;
+    position: relative;
+    display: flex;
+    justify-content: center;
+    gap: 2rem;
+    align-items: center;
+}
+
+#webcam {
+    width: 100%;
+    max-width: 400px;
+    border-radius: 0.5rem;
+    background-color: #eee;
+}
+
+#faceCanvas {
+    width: 200px;
+    height: 200px;
+    border-radius: 1rem;
+    background-color: #fff;
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1);
+}
+
+.status-container {
+    margin: 1rem 0;
+}
+
+#status {
+    color: #666;
+    font-size: 1.1rem;
+}
+
+.controls {
+    display: flex;
+    gap: 1rem;
+    justify-content: center;
+    margin: 1rem 0;
+}
+
+button {
+    padding: 0.75rem 1.5rem;
+    border: none;
+    border-radius: 0.5rem;
+    font-size: 1rem;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+#startButton {
+    background-color: #4CAF50;
+    color: white;
+}
+
+#stopButton {
+    background-color: #f44336;
+    color: white;
+}
+
+button:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+}
+
+button:hover:not(:disabled) {
+    transform: translateY(-2px);
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+}
+
+.dialog {
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    background: white;
+    padding: 2rem;
+    border-radius: 1rem;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
+    z-index: 1000;
+    width: 90%;
+    max-width: 500px;
+}
+
+.dialog.hidden {
+    display: none;
+}
+
+.dialog h2 {
+    margin-bottom: 1rem;
+    color: #333;
+    position: relative;
+    padding-right: 30px; /* Make space for close button */
+}
+
+#distractionReason {
+    width: 100%;
+    min-height: 100px;
+    margin: 1rem 0;
+    padding: 0.75rem;
+    border: 1px solid #ddd;
+    border-radius: 0.5rem;
+    font-size: 1rem;
+    resize: vertical;
+}
+
+#submitDistraction {
+    background-color: #2196F3;
+    color: white;
+} 
+
+/* Add to your stylesheet */
+#faceCanvas {
+    transition: transform 0.3s ease;
+}
+
+#status {
+    font-size: 1.2em;
+    padding: 10px;
+    border-radius: 5px;
+    transition: background-color 0.3s;
+}
+
+#status.focused {
+    background-color: #e8f5e9;
+    color: #2e7d32;
+}
+
+#status.distracted {
+    background-color: #ffecb3;
+    color: #f57f17;
+}
+
+#distractionDialog {
+    transition: opacity 0.3s, transform 0.3s;
+}
+
+#distractionDialog.hidden {
+    opacity: 0;
+    transform: translateY(-20px);
+}
+
+.close-button {
+    position: absolute;
+    top: 10px;
+    right: 10px;
+    height: 1.5rem;
+    width: 1.5rem;
+    padding: 0.5rem;
+    background: #f44336;
+    color: white;
+    border: none;
+    border-radius: 50%;
+    cursor: pointer;
+    font-size: 1.25rem;
+    line-height: 1;
+    transition: background-color 0.2s;
+}
+
+.close-button:hover {
+    background: #d32f2f;
+}
+
+/* Timer styles */
+.timer-display {
+    font-size: 2.5rem;
+    font-weight: bold;
+    color: #333;
+    margin: 1rem 0;
+    font-family: monospace;
+    background: #f8f8f8;
+    padding: 0.5rem 1rem;
+    border-radius: 0.5rem;
+    display: inline-block;
+    box-shadow: inset 0 0 5px rgba(0, 0, 0, 0.1);
+    transition: all 0.3s ease;
+}
+
+.timer-display.break {
+    background-color: #e3f2fd;
+    color: #0d47a1;
+}
+
+.timer-display.focus {
+    background-color: #e8f5e9;
+    color: #2e7d32;
+}
+
+.timer-display.warning {
+    background-color: #fff3e0;
+    color: #e65100;
+}
+
+.timer-controls {
+    background-color: #f9f9f9;
+    padding: 1rem;
+    border-radius: 0.75rem;
+    margin: 1.5rem 0;
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.05);
+}
+
+.timer-settings {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.75rem;
+    justify-content: center;
+    align-items: center;
+    margin-bottom: 1rem;
+}
+
+.timer-settings label {
+    font-weight: 500;
+    color: #555;
+}
+
+.timer-settings input {
+    width: 60px;
+    padding: 0.5rem;
+    border: 1px solid #ddd;
+    border-radius: 0.25rem;
+    text-align: center;
+    font-size: 1rem;
+}
+
+.timer-buttons {
+    display: flex;
+    gap: 0.75rem;
+    justify-content: center;
+    flex-wrap: wrap;
+}
+
+#startTimerButton {
+    background-color: #2196F3;
+    color: white;
+}
+
+#pauseTimerButton {
+    background-color: #FF9800;
+    color: white;
+}
+
+#resetTimerButton {
+    background-color: #9E9E9E;
+    color: white;
+}
+
+#breakDialog h2 {
+    color: #0d47a1;
+}
+
+#startBreakButton {
+    background-color: #2196F3;
+    color: white;
+}
+
+#skipBreakButton {
+    background-color: #9E9E9E;
+    color: white;
+}
+
+/* Animation */
+@keyframes pulse {
+    0% {
+        transform: scale(1);
+        opacity: 1;
+    }
+    50% {
+        transform: scale(1.05);
+        opacity: 0.8;
+    }
+    100% {
+        transform: scale(1);
+        opacity: 1;
+    }
+}
+
+.pulsing {
+    animation: pulse 2s infinite;
+}
+
+/* Progress circle animation */
+@keyframes progress {
+    0% { stroke-dashoffset: 283; } /* circumference of a circle with r=45 */
+    100% { stroke-dashoffset: 0; }
+}
