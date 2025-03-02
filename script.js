@@ -64,12 +64,10 @@ faceCanvas.height = 200;
 const FACE_SENSITIVITY = 2; // Higher value = more sensitive (default was 1)
 
 // Performance constants
-const PERFORMANCE = {
-    MOBILE_CHECK_INTERVAL: 400,    // ms between face checks on mobile
-    DESKTOP_CHECK_INTERVAL: 250,   // ms between face checks on desktop
-    RENDER_THROTTLE: 30,          // minimum ms between face renders
-    POINTS_UPDATE_INTERVAL: 10000  // ms between adding focus points
-};
+const MOBILE_CHECK_INTERVAL = 300; // ms between face checks on mobile
+const DESKTOP_CHECK_INTERVAL = 200; // ms between face checks on desktop
+const RENDER_THROTTLE = 50; // ms between face canvas renders
+const POINTS_UPDATE_INTERVAL = 1000; // ms between points updates
 
 // Cache DOM elements for performance
 const elements = {
@@ -99,6 +97,22 @@ let reachedMilestones = [];
 let continuousFocusStartTime = 0;
 let notificationTimeout = null;
 let notificationElement = null;
+
+// Add debug flag to enable verbose logging
+const DEBUG = true;
+
+// Debug logger
+function debugLog(message, obj = null) {
+    if (!DEBUG) return;
+    if (obj) {
+        console.log(`[DEBUG] ${message}`, obj);
+    } else {
+        console.log(`[DEBUG] ${message}`);
+    }
+}
+
+// Log app initialization
+debugLog('Script loaded, waiting for DOMContentLoaded event');
 
 // Create a notification container
 function createNotificationSystem() {
@@ -137,70 +151,140 @@ function showNotification(message, type = 'info', duration = 4000) {
     return notification;
 }
 
-// Initialize the webcam and model
-async function init() {
-    try {
-        // Show loading state
-        document.getElementById('loadingState').style.display = 'flex';
-        document.getElementById('appContent').classList.add('hidden');
-        
-        // Load the BlazeFace model
-        model = await blazeface.load();
-        
-        // Setup webcam
-        webcam = await setupWebcam();
-        
-        // Hide loading state, show app content
-        document.getElementById('loadingState').style.display = 'none';
-        document.getElementById('appContent').classList.remove('hidden');
-        
-        statusElement.textContent = 'Ready to start!';
-        startButton.disabled = false;
-
-        // Draw initial face
-        drawFace();
-        
-        // Initialize timer display
-        updateTimerDisplay();
-        
-        // Initialize points progress indicator
-        updatePointsProgressIndicator();
-        
-        // Add floating animation to the face
-        faceCanvas.classList.add('floating');
-        
-        // Setup mobile-specific event handlers
-        setupMobileHandlers();
-        
-        // Add settings dialog functionality
-        setupSettingsDialogHandlers();
-        
-        // Create notification system
-        createNotificationSystem();
-
-        // Hide timer buttons since we're integrating this functionality
-        document.querySelector('.timer-buttons').style.display = 'none';
-        
-        // Create and add milestone indicators
-        createMilestoneIndicators();
-    } catch (error) {
-        console.error('Error initializing:', error);
-        statusElement.textContent = 'Error: ' + error.message;
-        
-        // Show error in loading state
-        document.getElementById('loadingState').innerHTML = `
-            <p>Error loading model</p>
-            <p class="loading-info">${error.message}</p>
-            <button onclick="location.reload()" class="retry-button">Retry</button>
-        `;
+// Check browser compatibility before attempting to use camera
+function checkBrowserCompatibility() {
+    // Check for MediaDevices API
+    const hasMediaDevices = !!(navigator.mediaDevices && navigator.mediaDevices.getUserMedia);
+    
+    // Check for secure context (HTTPS or localhost)
+    const isSecureContext = window.isSecureContext;
+    
+    // Get browser info
+    const userAgent = navigator.userAgent;
+    let browserInfo = '';
+    
+    if (userAgent.indexOf('Chrome') > -1) {
+        browserInfo = 'Chrome';
+    } else if (userAgent.indexOf('Firefox') > -1) {
+        browserInfo = 'Firefox';
+    } else if (userAgent.indexOf('Safari') > -1) {
+        browserInfo = 'Safari';
+    } else if (userAgent.indexOf('Edge') > -1 || userAgent.indexOf('Edg') > -1) {
+        browserInfo = 'Edge';
+    } else {
+        browserInfo = 'Unknown Browser';
     }
+    
+    // Check browser permissions state if available
+    let permissionStatus = 'API not available';
+    
+    if (navigator.permissions && navigator.permissions.query) {
+        console.log('Permissions API is available');
+    } else {
+        console.log('Permissions API is not available in this browser');
+    }
+    
+    console.log(`Browser compatibility check:
+        - Browser: ${browserInfo}
+        - MediaDevices API: ${hasMediaDevices ? 'Available' : 'Not available'}
+        - Secure Context: ${isSecureContext ? 'Yes' : 'No'}
+        - User Agent: ${userAgent}
+    `);
+    
+    return {
+        hasMediaDevices,
+        isSecureContext,
+        browserInfo
+    };
 }
+
+// This function will be called right after DOMContentLoaded 
+// to validate all the HTML elements exist before we try to use them
+function validateHTMLElements() {
+    debugLog('Validating critical HTML elements');
+    
+    // Check primary elements
+    const elements = {
+        webcam: document.getElementById('webcam'),
+        loading: document.getElementById('loading'),
+        appContent: document.getElementById('appContent'),
+        status: document.getElementById('status'),
+        faceCanvas: document.getElementById('faceCanvas')
+    };
+    
+    // Log each element's existence
+    for (const [name, element] of Object.entries(elements)) {
+        if (!element) {
+            console.error(`[MISSING ELEMENT] ${name} element not found in HTML!`);
+            debugLog(`Critical element missing: ${name}`, { found: false });
+        } else {
+            debugLog(`Element found: ${name}`, { 
+                found: true, 
+                id: element.id,
+                tagName: element.tagName,
+                display: element.style.display,
+                className: element.className
+            });
+        }
+    }
+    
+    // Test if video element's srcObject can be set
+    if (elements.webcam) {
+        try {
+            // Create a null MediaStream just to test if we can set srcObject
+            elements.webcam.srcObject = null;
+            debugLog('Video.srcObject property is accessible');
+        } catch (e) {
+            debugLog('ERROR: Cannot set video.srcObject property!', e);
+            console.error('Cannot set srcObject on webcam element:', e);
+        }
+    }
+    
+    return elements;
+}
+
+// Initialize the app when the page loads
+document.addEventListener('DOMContentLoaded', () => {
+    debugLog('DOMContentLoaded event fired');
+    
+    // Validate DOM elements first
+    const elementsCheck = validateHTMLElements();
+    
+    // Check browser features before continuing
+    debugLog('Checking browser features');
+    const features = {
+        mediaDevices: !!navigator.mediaDevices,
+        getUserMedia: !!(navigator.mediaDevices && navigator.mediaDevices.getUserMedia),
+        secureContext: window.isSecureContext,
+        permissions: !!navigator.permissions,
+        localStorage: !!window.localStorage
+    };
+    
+    debugLog('Browser features check:', features);
+    
+    // Check for any obvious issues that would prevent camera access
+    if (!features.mediaDevices) {
+        console.error('MediaDevices API not available - camera access will fail');
+    }
+    
+    if (!features.secureContext) {
+        console.error('Not in a secure context (HTTPS) - camera access will fail');
+    }
+    
+    // Only attempt initialization if critical elements exist
+    if (elementsCheck.webcam && elementsCheck.loading) {
+        debugLog('Critical elements found, calling init()');
+        init();
+    } else {
+        console.error('Cannot initialize app - critical HTML elements are missing');
+    }
+});
 
 // Draw the 2D face with minimalist design and performance optimization
 function drawFace(isFocused = true, faceX = null, faceY = null) {
     // Throttle rendering for performance
     const now = Date.now();
-    if (now - lastRenderTime < PERFORMANCE.RENDER_THROTTLE) return;
+    if (now - lastRenderTime < RENDER_THROTTLE) return;
     lastRenderTime = now;
     
     // Rest of the drawFace function as before
@@ -314,11 +398,31 @@ function drawFace(isFocused = true, faceX = null, faceY = null) {
     }
 }
 
-// Setup webcam stream
+// Setup webcam stream with better permission handling
 async function setupWebcam() {
+    debugLog('setupWebcam() function called');
+    
+    // Run compatibility check first
+    debugLog('Running browser compatibility check');
+    const compatibility = checkBrowserCompatibility();
+    debugLog('Browser compatibility results:', compatibility);
+    
+    // First check if mediaDevices is supported
+    if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+        debugLog('MediaDevices API not supported in this browser');
+        throw new Error(`Your browser (${compatibility.browserInfo}) does not support webcam access. Please try Chrome, Firefox or Edge.`);
+    }
+
+    // Check for secure context - camera access requires HTTPS or localhost
+    if (!compatibility.isSecureContext) {
+        debugLog('Not running in a secure context, camera access will be blocked');
+        throw new Error('Camera access requires a secure connection (HTTPS). Please use a secure connection or localhost.');
+    }
+
     try {
         // Check if user is on mobile
         const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
+        debugLog('Device type detected:', isMobile ? 'Mobile' : 'Desktop');
         
         // Use more optimized video constraints based on device
         const videoConstraints = {
@@ -327,20 +431,114 @@ async function setupWebcam() {
             height: isMobile ? { ideal: 180 } : { ideal: 360 }
         };
         
+        console.log('Requesting camera permission...', videoConstraints);
+        debugLog('Video constraints for getUserMedia:', videoConstraints);
+        
+        // Check current permissions if API is available
+        if (navigator.permissions && navigator.permissions.query) {
+            try {
+                debugLog('Permissions API available, checking camera permission state');
+                const permissionStatus = await navigator.permissions.query({ name: 'camera' });
+                console.log('Camera permission status:', permissionStatus.state);
+                debugLog('Current camera permission status:', permissionStatus.state);
+                
+                // Add listener for permission changes
+                permissionStatus.addEventListener('change', () => {
+                    console.log('Camera permission changed to:', permissionStatus.state);
+                    debugLog('Permission state changed to:', permissionStatus.state);
+                });
+            } catch (e) {
+                console.log('Error checking camera permission:', e);
+                debugLog('Error when checking permission status:', e);
+            }
+        } else {
+            debugLog('Permissions API not available, cannot check permission state');
+        }
+        
+        // Explicitly request user permission
+        debugLog('Calling getUserMedia to request camera access...');
         const stream = await navigator.mediaDevices.getUserMedia({
             video: videoConstraints,
             audio: false
         });
         
-        webcamElement.srcObject = stream;
+        console.log('Camera permission granted, stream tracks:', stream.getVideoTracks().length);
+        debugLog('getUserMedia succeeded! Got camera stream:', {
+            trackCount: stream.getVideoTracks().length,
+            active: stream.active
+        });
         
+        // Log stream constraints for debugging
+        const videoTrack = stream.getVideoTracks()[0];
+        if (videoTrack) {
+            console.log('Video track settings:', videoTrack.getSettings());
+            debugLog('Video track details:', {
+                label: videoTrack.label,
+                settings: videoTrack.getSettings(),
+                constraints: videoTrack.getConstraints(),
+                enabled: videoTrack.enabled
+            });
+        }
+        
+        // Set the webcam stream to the video element
+        debugLog('Setting stream to video element srcObject property');
+        webcam.srcObject = stream;
+        debugLog('Stream assigned to video element, readyState:', webcam.readyState);
+        
+        // Return a promise that resolves when metadata is loaded
+        debugLog('Waiting for video metadata to load');
         return new Promise((resolve) => {
-            webcamElement.onloadedmetadata = () => {
-                resolve(webcamElement);
+            webcam.onloadedmetadata = () => {
+                console.log('Webcam metadata loaded, video ready');
+                debugLog('Video metadata loaded, video dimensions:', {
+                    videoWidth: webcam.videoWidth,
+                    videoHeight: webcam.videoHeight,
+                    clientWidth: webcam.clientWidth,
+                    clientHeight: webcam.clientHeight
+                });
+                
+                // Also log when video starts playing
+                webcam.onplay = () => {
+                    debugLog('Video playback started!');
+                };
+                
+                resolve(webcam);
+            };
+            
+            // Add error handler for video element
+            webcam.onerror = (err) => {
+                debugLog('Video element error:', err);
+                console.error('Video element error:', err);
             };
         });
     } catch (error) {
-        throw new Error('Webcam access denied or not available');
+        console.error('Camera permission error:', error);
+        debugLog('getUserMedia failed with error:', {
+            name: error.name,
+            message: error.message,
+            stack: error.stack
+        });
+        
+        // More descriptive error messages based on the error type
+        if (error.name === 'NotAllowedError' || error.name === 'PermissionDeniedError') {
+            debugLog('User denied camera permission');
+            throw new Error('Camera access denied. Please allow camera access in your browser settings and reload the page.');
+        } else if (error.name === 'NotFoundError' || error.name === 'DevicesNotFoundError') {
+            debugLog('No camera detected on this device');
+            throw new Error('No camera found. Please connect a camera and reload the page.');
+        } else if (error.name === 'NotReadableError' || error.name === 'TrackStartError') {
+            debugLog('Camera in use by another application');
+            throw new Error('Your camera is in use by another application. Please close other apps using your camera.');
+        } else if (error.name === 'OverconstrainedError') {
+            debugLog('Camera constraints cannot be satisfied');
+            throw new Error('Camera cannot satisfy the requested constraints. Please try using a different camera.');
+        } else if (error.name === 'TypeError' && error.message.includes('Permissions request')) {
+            debugLog('Permission request timeout');
+            throw new Error('Permission request is taking too long. Please try again or check your browser settings.');
+        } else {
+            debugLog('Unknown camera error');
+            throw new Error(`Webcam error (${error.name}): ${error.message}`);
+        }
     }
 }
 
@@ -408,8 +606,8 @@ async function startMonitoring() {
     // Adjust check interval based on device for performance
     const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
     const checkInterval = isMobile ? 
-        PERFORMANCE.MOBILE_CHECK_INTERVAL : 
-        PERFORMANCE.DESKTOP_CHECK_INTERVAL;
+        MOBILE_CHECK_INTERVAL : 
+        DESKTOP_CHECK_INTERVAL;
     
     checkFaceInterval = setInterval(checkFace, checkInterval);
     
@@ -535,7 +733,7 @@ function startPointsAccumulation() {
             } else {
                 pointsMultiplier = 1;
             }
-        }, PERFORMANCE.POINTS_UPDATE_INTERVAL);
+        }, POINTS_UPDATE_INTERVAL);
     }
 }
 
@@ -974,9 +1172,6 @@ async function checkFace() {
     }
 }
 
-// Initialize the application
-init();
-
 // Set audio volumes
 chimeSound.volume = 0.4; // 40% volume
 timerCompleteSound.volume = 0.5; // 50% volume
@@ -1014,4 +1209,208 @@ document.addEventListener('DOMContentLoaded', function() {
     // Add listeners for break buttons
     document.getElementById('startBreakButton').addEventListener('click', startBreak);
     document.getElementById('skipBreakButton').addEventListener('click', skipBreak);
-}); 
+});
+
+// Function to manually force the camera permission prompt
+function forceRequestCameraPermission() {
+    debugLog('Manual camera permission request triggered');
+    
+    // Display a message
+    const loadingInfo = document.querySelector('.loading-info');
+    if (loadingInfo) {
+        loadingInfo.innerHTML = '<p>Requesting camera permission directly...</p>';
+    }
+    
+    // Direct getUserMedia call to force permission dialog
+    return navigator.mediaDevices.getUserMedia({video: true})
+        .then(stream => {
+            debugLog('Manual permission request succeeded', {
+                tracks: stream.getTracks().length
+            });
+            
+            // Display success
+            if (loadingInfo) {
+                loadingInfo.innerHTML = '<p class="success-message">Permission granted! Reloading...</p>';
+            }
+            
+            // Stop tracks
+            stream.getTracks().forEach(track => track.stop());
+            
+            // Reload the page after delay
+            setTimeout(() => {
+                window.location.reload();
+            }, 1500);
+            
+            return true;
+        })
+        .catch(err => {
+            debugLog('Manual permission request failed', err);
+            
+            // Display error
+            if (loadingInfo) {
+                loadingInfo.innerHTML = `
+                    <p class="error-message">Camera permission error: ${err.message}</p>
+                    <p>Please check your browser settings and try again.</p>
+                `;
+            }
+            
+            return false;
+        });
+}
+
+// Initialize the webcam and model
+async function init() {
+    debugLog('Initialization started');
+    try {
+        // Create loading element reference
+        const loadingElement = document.getElementById('loading');
+        const loadingText = document.querySelector('#loading h2');
+        const loadingInfo = document.querySelector('.loading-info');
+        
+        // Add a manual trigger button at the top of the loading screen
+        const manualTriggerContainer = document.createElement('div');
+        manualTriggerContainer.style.marginBottom = '20px';
+        
+        const manualTrigger = document.createElement('button');
+        manualTrigger.textContent = 'Force Camera Permission';
+        manualTrigger.className = 'permission-button';
+        manualTrigger.style.marginTop = '10px';
+        manualTrigger.onclick = forceRequestCameraPermission;
+        
+        manualTriggerContainer.appendChild(manualTrigger);
+        loadingElement.insertBefore(manualTriggerContainer, loadingElement.firstChild);
+        
+        debugLog('Added manual permission trigger button');
+        
+        // Check if the webcam element exists
+        const webcamElement = document.getElementById('webcam');
+        const faceCanvas = document.getElementById('faceCanvas');
+        const faceCtx = faceCanvas.getContext('2d');
+        
+        debugLog('Webcam and canvas elements:', { webcamElement, faceCanvas });
+        
+        if (!webcamElement || !faceCanvas) {
+            debugLog('Required elements not found!');
+            throw new Error('Required elements not found');
+        }
+        
+        // Update loading message
+        loadingText.textContent = 'Setting up camera...';
+        debugLog('Updated loading message: Setting up camera...');
+        
+        try {
+            // Setup webcam first
+            debugLog('Assigning webcam element to global variable');
+            webcam = webcamElement; // Assign the video element to our global webcam variable
+            debugLog('Calling setupWebcam() function');
+            await setupWebcam();
+            debugLog('Webcam setup successful');
+        } catch (webcamError) {
+            console.error('Webcam setup failed:', webcamError);
+            debugLog('Webcam setup failed with error:', webcamError);
+            
+            // Create a permission button if it doesn't exist yet
+            if (!document.querySelector('.permission-button')) {
+                debugLog('Creating permission button for user intervention');
+                // Clear the loading info and show a more detailed message
+                loadingInfo.innerHTML = `
+                    <p class="error-message">${webcamError.message}</p>
+                    <p>This app needs camera access to track your focus during study sessions.</p>
+                    <p>Your camera feed is processed locally and never stored or sent anywhere.</p>
+                `;
+                
+                // Add a button to request permissions again
+                const permissionButton = document.createElement('button');
+                permissionButton.className = 'permission-button';
+                permissionButton.textContent = 'Enable Camera Access';
+                permissionButton.onclick = () => {
+                    // Remove the error message and button
+                    loadingInfo.innerHTML = '<p>Requesting camera access...</p>';
+                    permissionButton.remove();
+                    
+                    // Try to setup the webcam again
+                    debugLog('User clicked permission button, trying init() again');
+                    init();
+                };
+                
+                loadingElement.appendChild(permissionButton);
+                debugLog('Permission button added to DOM');
+            }
+            
+            // We'll return early since we can't proceed without camera access
+            debugLog('Returning early from init() due to webcam setup failure');
+            return;
+        }
+        
+        // Update loading message
+        loadingText.textContent = 'Loading AI model...';
+        debugLog('Updated loading message: Loading AI model...');
+        
+        // Setup face detection
+        debugLog('Loading BlazeFace model');
+        model = await blazeface.load();
+        debugLog('BlazeFace model loaded successfully');
+        
+        // Once model is loaded, initialize app and show main content
+        debugLog('Hiding loading screen and showing main content');
+        document.getElementById('loading').style.display = 'none';
+        document.getElementById('appContent').classList.remove('hidden');
+        
+        // Initialize status and UI elements
+        const statusElement = document.getElementById('status');
+        const startButton = document.getElementById('startButton');
+        
+        statusElement.textContent = 'Ready to start!';
+        startButton.disabled = false;
+        
+        // Draw initial face
+        debugLog('Drawing initial face');
+        drawFace();
+        
+        // Initialize timer display
+        updateTimerDisplay();
+        
+        // Initialize points progress indicator
+        updatePointsProgressIndicator();
+        
+        // Add floating animation to the face
+        faceCanvas.classList.add('floating');
+        
+        // Setup additional handlers and UI elements
+        setupMobileHandlers();
+        setupSettingsDialogHandlers();
+        
+        // Create notification system
+        const notificationContainer = createNotificationSystem();
+        document.body.appendChild(notificationContainer);
+        
+        // Create milestone indicators
+        createMilestoneIndicators();
+        
+        console.log('App initialized successfully');
+        debugLog('App initialization complete');
+    } catch (error) {
+        console.error('Initialization error:', error);
+        debugLog('Initialization failed with error:', error);
+        
+        // Display error to user
+        const loadingElement = document.getElementById('loading');
+        const loadingInfo = document.querySelector('.loading-info');
+        
+        if (loadingInfo) {
+            loadingInfo.innerHTML = `
+                <p class="error-message">Error: ${error.message}</p>
+                <p>Please try refreshing the page or using a different browser.</p>
+            `;
+            
+            // Add a retry button
+            const retryButton = document.createElement('button');
+            retryButton.className = 'retry-button';
+            retryButton.textContent = 'Retry';
+            retryButton.onclick = () => window.location.reload();
+            
+            loadingElement.appendChild(retryButton);
+            debugLog('Retry button added due to initialization error');
+        }
+    }
+} 
