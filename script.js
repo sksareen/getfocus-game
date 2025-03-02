@@ -87,6 +87,56 @@ const elements = {
 // Last render timestamp for throttling
 let lastRenderTime = 0;
 
+// ======= New Focus Milestone System =======
+const MILESTONES = [
+    { duration: 2, points: 5, message: "2 min focus! 🌱" },
+    { duration: 5, points: 15, message: "5 min streak! 🌿" },
+    { duration: 10, points: 30, message: "10 min deep focus! 🌲" },
+    { duration: 15, points: 50, message: "15 min flow state! 🏆" },
+    { duration: 25, points: 100, message: "Full Pomodoro! 🔥" }
+];
+let reachedMilestones = [];
+let continuousFocusStartTime = 0;
+let notificationTimeout = null;
+let notificationElement = null;
+
+// Create a notification container
+function createNotificationSystem() {
+    // Create the notification container if it doesn't exist
+    if (!document.getElementById('notificationContainer')) {
+        const container = document.createElement('div');
+        container.id = 'notificationContainer';
+        container.style.position = 'fixed';
+        container.style.bottom = '15px';
+        container.style.right = '15px';
+        container.style.zIndex = '1000';
+        document.body.appendChild(container);
+    }
+    return document.getElementById('notificationContainer');
+}
+
+// Display a non-intrusive notification
+function showNotification(message, type = 'info', duration = 4000) {
+    const container = createNotificationSystem();
+    
+    const notification = document.createElement('div');
+    notification.className = `notification ${type}`;
+    notification.innerHTML = message;
+    
+    container.appendChild(notification);
+    
+    // Animate in
+    setTimeout(() => notification.classList.add('show'), 10);
+    
+    // Set timeout to remove
+    setTimeout(() => {
+        notification.classList.remove('show');
+        setTimeout(() => notification.remove(), 300);
+    }, duration);
+    
+    return notification;
+}
+
 // Initialize the webcam and model
 async function init() {
     try {
@@ -124,9 +174,15 @@ async function init() {
         
         // Add settings dialog functionality
         setupSettingsDialogHandlers();
+        
+        // Create notification system
+        createNotificationSystem();
 
         // Hide timer buttons since we're integrating this functionality
         document.querySelector('.timer-buttons').style.display = 'none';
+        
+        // Create and add milestone indicators
+        createMilestoneIndicators();
     } catch (error) {
         console.error('Error initializing:', error);
         statusElement.textContent = 'Error: ' + error.message;
@@ -344,6 +400,8 @@ async function startMonitoring() {
     lastFaceDetectedTime = Date.now();
     totalDistractedTime = 0;
     sessionStartTime = Date.now();
+    continuousFocusStartTime = Date.now(); // Start tracking continuous focus time
+    reachedMilestones = []; // Reset milestones
     elements.status.textContent = 'Monitoring your focus...';
     elements.status.className = 'focused';
     
@@ -359,6 +417,9 @@ async function startMonitoring() {
     startTimer();
     
     document.querySelector('.webcam-container').classList.add('active');
+    
+    // Show an encouraging notification to start
+    showNotification("Focus session started! 💪 First milestone: 2 minutes", "success");
 }
 
 // Stop monitoring - also stops the timer
@@ -387,87 +448,58 @@ function stopMonitoring() {
     document.querySelector('.webcam-container').classList.remove('active');
 }
 
-// Enhanced check face function with improved detection logic
-async function checkFace() {
-    if (!isMonitoring) return;
+// Create milestone indicators in the UI
+function createMilestoneIndicators() {
+    const container = document.createElement('div');
+    container.className = 'milestone-indicators';
     
-    try {
-        // Reduce prediction frequency on mobile
-        const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
-        if (isMobile && Math.random() > 0.7) {
-            // Skip some frames on mobile for better performance
-            return;
-        }
+    MILESTONES.forEach((milestone, index) => {
+        const indicator = document.createElement('div');
+        indicator.className = 'milestone-indicator';
+        indicator.id = `milestone-${milestone.duration}`;
+        indicator.innerHTML = `<span>${milestone.duration}m</span>`;
+        indicator.title = `Focus for ${milestone.duration} minutes to earn ${milestone.points} points`;
         
-        const predictions = await model.estimateFaces(webcamElement, false);
+        // Set the position based on index
+        indicator.style.left = `${(milestone.duration / 30) * 100}%`;
         
-        if (predictions.length > 0) {
-            lastFaceDetectedTime = Date.now();
-            
-            // Get the first detected face
-            const face = predictions[0];
-            
-            // Update face position data for animation
-            const centerX = (face.topLeft[0] + face.bottomRight[0]) / 2;
-            const centerY = (face.topLeft[1] + face.bottomRight[1]) / 2;
-            
-            // Simplified expression detection based on head position
-            const isLookingDown = centerY > webcamElement.height * 0.6;
-            
-            // Update last face position
-            lastFacePosition = { x: centerX, y: centerY };
-            
-            if (isLookingDown) {
-                // Show concerned face if looking down
-                drawFace(false, centerX, centerY);
-                elements.status.className = 'distracted';
-                updateStatus(false);
-                consecutiveFocusTime = Math.max(0, consecutiveFocusTime - 0.5);
-            } else {
-                // Draw the reactive face (showing focused state) with position
-                drawFace(true, centerX, centerY);
-                elements.status.className = 'focused';
-                updateStatus(true);
-                consecutiveFocusTime += 0.25; // 250ms interval
-            }
-            
-        } else {
-            const timeSinceLastFace = Date.now() - lastFaceDetectedTime;
-            
-            if (timeSinceLastFace > DISTRACTION_THRESHOLD) {
-                drawFace(false);
-                elements.status.className = 'distracted';
-                updateStatus(false);
-                handleDistraction();
-                consecutiveFocusTime = 0;
-            } else {
-                drawFace(true, lastFacePosition.x, lastFacePosition.y);
-                updateStatus(true);
-            }
-        }
-    } catch (error) {
-        console.error('Error in face detection:', error);
-        elements.status.textContent = 'Face detection error occurred';
+        container.appendChild(indicator);
+    });
+    
+    // Add the container to the points section
+    const pointsContainer = document.querySelector('.points-container');
+    if (pointsContainer) {
+        pointsContainer.appendChild(container);
     }
 }
 
-// Handle distraction event
+// Handle distraction event with non-intrusive notification
 function handleDistraction() {
-    // Don't trigger if a dialog is already open or too soon after the last distraction
-    if (!distractionDialog.classList.contains('hidden') || 
-        Date.now() - distractionStartTime < 3000) return;
+    // Don't trigger too frequently
+    if (Date.now() - distractionStartTime < 3000) return;
     
     distractionStartTime = Date.now();
-    distractionDialog.classList.remove('hidden');
+    
+    // Play a subtle sound
     chimeSound.currentTime = 0;
+    chimeSound.volume = 0.2;
     chimeSound.play();
     
-    // Auto-hide after 8 seconds
-    distractionTimeout = setTimeout(() => {
-        distractionDialog.classList.add('hidden');
-        totalDistractedTime += Date.now() - distractionStartTime;
-        updateStatus(true);
-    }, 8000);
+    // Reset continuous focus time
+    const focusedForSeconds = Math.floor((Date.now() - continuousFocusStartTime) / 1000);
+    continuousFocusStartTime = Date.now();
+    
+    // Show non-intrusive notification instead of dialog
+    showNotification(`
+        <div class="distraction-notification">
+            <h3>Distraction detected</h3>
+            <p>You were focused for ${formatTime(focusedForSeconds)}. Let's refocus!</p>
+        </div>
+    `, 'warning', 5000);
+    
+    // Update distracted time
+    totalDistractedTime += 3000; // Add a default distraction duration
+    updateStatus(false);
 }
 
 function updateStatus(isFocused) {
@@ -514,7 +546,7 @@ function stopPointsAccumulation() {
     consecutiveFocusTime = 0;
 }
 
-function addPoints(points) {
+function addPoints(points, isMilestone = false) {
     if (points <= 0) return;
     
     // Apply points
@@ -522,7 +554,7 @@ function addPoints(points) {
     
     // Update display with animation
     elements.pointsDisplay.textContent = focusPoints;
-    elements.pointsDisplay.classList.add('point-earned');
+    elements.pointsDisplay.classList.add(isMilestone ? 'milestone-earned' : 'point-earned');
     
     // Update the progress indicator
     updatePointsProgressIndicator();
@@ -530,20 +562,22 @@ function addPoints(points) {
     // Add pulse effect to progress bar
     const progressFill = elements.pointsProgressFill;
     if (progressFill) {
-        progressFill.classList.add('pulse');
+        progressFill.classList.add(isMilestone ? 'milestone-pulse' : 'pulse');
         setTimeout(() => {
             progressFill.classList.remove('pulse');
+            progressFill.classList.remove('milestone-pulse');
         }, 1000);
     }
     
     // Play sound
     pointEarnedSound.currentTime = 0;
-    pointEarnedSound.volume = 0.3;
+    pointEarnedSound.volume = isMilestone ? 0.4 : 0.3;
     pointEarnedSound.play();
     
     // Remove animation class after it completes
     setTimeout(() => {
         elements.pointsDisplay.classList.remove('point-earned');
+        elements.pointsDisplay.classList.remove('milestone-earned');
     }, 500);
     
     // Check for level up
@@ -824,6 +858,119 @@ function setupSettingsDialogHandlers() {
             // Close the dialog
             settingsDialog.classList.add('hidden');
         });
+    }
+}
+
+// Check for focus milestones
+function checkFocusMilestones() {
+    if (!isMonitoring || Date.now() - continuousFocusStartTime < 1000) return;
+    
+    const focusedForMinutes = (Date.now() - continuousFocusStartTime) / (60 * 1000);
+    
+    MILESTONES.forEach(milestone => {
+        if (focusedForMinutes >= milestone.duration && !reachedMilestones.includes(milestone.duration)) {
+            // Mark milestone as reached
+            reachedMilestones.push(milestone.duration);
+            
+            // Add bonus points
+            addPoints(milestone.points, true);
+            
+            // Show notification
+            const notification = showNotification(`
+                <div class="milestone-notification">
+                    <h3>${milestone.message}</h3>
+                    <p>+${milestone.points} bonus points!</p>
+                    <div class="milestone-progress">🏆</div>
+                </div>
+            `, 'success', 5000);
+            
+            // Highlight the milestone indicator
+            const indicator = document.getElementById(`milestone-${milestone.duration}`);
+            if (indicator) {
+                indicator.classList.add('achieved');
+            }
+            
+            // Play a rewarding sound
+            pointEarnedSound.currentTime = 0;
+            pointEarnedSound.volume = 0.4;
+            pointEarnedSound.play();
+        }
+    });
+}
+
+// Enhanced check face function with focus milestone tracking
+async function checkFace() {
+    if (!isMonitoring) return;
+    
+    try {
+        // Reduce prediction frequency on mobile
+        const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
+        if (isMobile && Math.random() > 0.7) {
+            // Skip some frames on mobile for better performance
+            return;
+        }
+        
+        const predictions = await model.estimateFaces(webcamElement, false);
+        
+        if (predictions.length > 0) {
+            lastFaceDetectedTime = Date.now();
+            
+            // Get the first detected face
+            const face = predictions[0];
+            
+            // Update face position data for animation
+            const centerX = (face.topLeft[0] + face.bottomRight[0]) / 2;
+            const centerY = (face.topLeft[1] + face.bottomRight[1]) / 2;
+            
+            // Simplified expression detection based on head position
+            const isLookingDown = centerY > webcamElement.height * 0.6;
+            
+            // Update last face position
+            lastFacePosition = { x: centerX, y: centerY };
+            
+            if (isLookingDown) {
+                // Show concerned face if looking down
+                drawFace(false, centerX, centerY);
+                elements.status.className = 'distracted';
+                updateStatus(false);
+                consecutiveFocusTime = Math.max(0, consecutiveFocusTime - 0.5);
+                
+                // Reset continuous focus if distracted for too long
+                if (Date.now() - lastFaceDetectedTime > DISTRACTION_THRESHOLD / 2) {
+                    continuousFocusStartTime = Date.now();
+                }
+            } else {
+                // Draw the reactive face (showing focused state) with position
+                drawFace(true, centerX, centerY);
+                elements.status.className = 'focused';
+                updateStatus(true);
+                consecutiveFocusTime += 0.25; // 250ms interval
+                
+                // Check for focus milestones
+                checkFocusMilestones();
+            }
+            
+        } else {
+            const timeSinceLastFace = Date.now() - lastFaceDetectedTime;
+            
+            if (timeSinceLastFace > DISTRACTION_THRESHOLD) {
+                drawFace(false);
+                elements.status.className = 'distracted';
+                updateStatus(false);
+                handleDistraction();
+                consecutiveFocusTime = 0;
+                continuousFocusStartTime = Date.now(); // Reset continuous focus timer
+            } else {
+                drawFace(true, lastFacePosition.x, lastFacePosition.y);
+                updateStatus(true);
+                
+                // Check for focus milestones
+                checkFocusMilestones();
+            }
+        }
+    } catch (error) {
+        console.error('Error in face detection:', error);
+        elements.status.textContent = 'Face detection error occurred';
     }
 }
 
