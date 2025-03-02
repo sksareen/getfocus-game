@@ -290,7 +290,7 @@ function drawFace(isFocused = true, faceX = null, faceY = null) {
     // Rest of the drawFace function as before
     ctx.clearRect(0, 0, faceCanvas.width, faceCanvas.height);
     
-    const centerX = 100;
+    const centerX = 100; 
     const centerY = 100;
     
     let offsetX = 0;
@@ -367,9 +367,9 @@ function drawFace(isFocused = true, faceX = null, faceY = null) {
 
     // Draw progress indicator when monitoring
     if (isMonitoring) {
-        const timeSinceLastDetection = Date.now() - lastFaceDetectedTime;
-        const progress = Math.min(1, timeSinceLastDetection / DISTRACTION_THRESHOLD);
-        
+    const timeSinceLastDetection = Date.now() - lastFaceDetectedTime;
+    const progress = Math.min(1, timeSinceLastDetection / DISTRACTION_THRESHOLD);
+    
         let circleColor = isFocused ? '#4CAF50' : '#F44336';
         if (isFocused && progress > 0.5) {
             circleColor = '#FFC107';
@@ -1184,11 +1184,11 @@ document.addEventListener('DOMContentLoaded', function() {
     // Add the event listener to all pause buttons
     pauseButtons.forEach(button => {
         button.addEventListener('click', () => {
-            if (isTimerRunning) {
-                pauseTimer();
-            } else {
-                resumeTimer();
-            }
+    if (isTimerRunning) {
+        pauseTimer();
+    } else {
+        resumeTimer();
+    }
             
             // Update all pause buttons
             pauseButtons.forEach(btn => {
@@ -1330,7 +1330,7 @@ async function init() {
                     
                     // Try to setup the webcam again
                     debugLog('User clicked permission button, trying init() again');
-                    init();
+init();
                 };
                 
                 loadingElement.appendChild(permissionButton);
