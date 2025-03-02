@@ -9,46 +9,132 @@
 <body>
     <div class="container">
         <h1>AI Study Buddy</h1>
-        <canvas id="faceCanvas"></canvas>
-        <div class="webcam-container">
-            <video id="webcam" autoplay playsinline></video>
-        </div>
-        <div class="status-container">
-            <p id="status">Getting ready...</p>
-            <div id="timerDisplay" class="timer-display">25:00</div>
-        </div>
-        <div class="controls">
-            <button id="startButton">Start Studying</button>
-            <button id="stopButton" disabled>Stop</button>
-        </div>
-        <div class="timer-controls">
-            <div class="timer-settings">
-                <label for="workDuration">Focus time (min):</label>
-                <input type="number" id="workDuration" min="1" max="60" value="25">
-                <label for="breakDuration">Break time (min):</label>
-                <input type="number" id="breakDuration" min="1" max="30" value="5">
+        
+        <!-- Settings button -->
+        <button id="settingsButton" aria-label="Settings">
+            <svg class="settings-icon" viewBox="0 0 24 24">
+                <path d="M12 15.5a3.5 3.5 0 100-7 3.5 3.5 0 000 7z"/>
+                <path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 010 2.83 2 2 0 01-2.83 0l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-2 2 2 2 0 01-2-2v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83 0 2 2 0 010-2.83l.06-.06a1.65 1.65 0 00.33-1.82 1.65 1.65 0 00-1.51-1H3a2 2 0 01-2-2 2 2 0 012-2h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 010-2.83 2 2 0 012.83 0l.06.06a1.65 1.65 0 001.82.33H9a1.65 1.65 0 001-1.51V3a2 2 0 012-2 2 2 0 012 2v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 0 2 2 0 010 2.83l-.06.06a1.65 1.65 0 00-.33 1.82V9a1.65 1.65 0 001.51 1H21a2 2 0 012 2 2 2 0 01-2 2h-.09a1.65 1.65 0 00-1.51 1z"/>
+            </svg>
+        </button>
+        
+        <!-- Loading state -->
+        <div id="loadingState">
+            <p>Loading AI model...</p>
+            <div class="loading-indicator">
+                <div></div><div></div><div></div><div></div>
             </div>
-            <div class="timer-buttons">
-                <button id="startTimerButton">Start Timer</button>
-                <button id="pauseTimerButton" disabled>Pause</button>
-                <button id="resetTimerButton">Reset</button>
+            <p class="loading-info">This might take a moment on first load</p>
+        </div>
+        
+        <!-- Main app content (hidden until loaded) -->
+        <div id="appContent" class="hidden">
+            <!-- Grid layout with webcam and face side by side -->
+            <div class="app-layout">
+                <div class="webcam-container">
+                    <video id="webcam" autoplay playsinline></video>
+                </div>
+                
+                <div class="face-and-points">
+                    <canvas id="faceCanvas"></canvas>
+                    <div class="points-container">
+                        <div class="points-title">FOCUS POINTS</div>
+                        <div id="pointsDisplay">0</div>
+                        
+                        <!-- Points progress indicator -->
+                        <div class="points-progress-container">
+                            <div class="level-indicator">
+                                <span>Level <span id="currentLevel">1</span> → <span id="nextLevel">2</span></span>
+                            </div>
+                            <div id="pointsProgressBar" class="points-progress-bar">
+                                <div id="pointsProgressFill" class="points-progress-fill"></div>
+                            </div>
+                        </div>
+                        
+                        <div class="points-info">Earn points by maintaining focus!</div>
+                    </div>
+                </div>
+                
+                <div class="status-container">
+                    <p id="status">Getting ready...</p>
+                    <div id="timerDisplay" class="timer-display">25:00</div>
+                    <div class="timer-controls-compact">
+                        <button id="pauseTimerButton" disabled>Pause</button>
+                        <button id="resetTimerButton">Reset</button>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="controls">
+                <button id="startButton">Start Studying</button>
+                <button id="stopButton" disabled>Stop</button>
+            </div>
+            
+            <div class="timer-controls">
+                <div class="timer-settings">
+                    <label for="workDuration">Focus time (min):</label>
+                    <input type="number" id="workDuration" min="1" max="60" value="25">
+                    <label for="breakDuration">Break time (min):</label>
+                    <input type="number" id="breakDuration" min="1" max="30" value="5">
+                </div>
+                <div class="timer-info">
+                    <p>Timer starts with studying</p>
+                </div>
+                <!-- Timer buttons hidden and replaced with compact controls -->
+                <div class="timer-buttons" style="display: none;">
+                    <button id="startTimerButton">Start Timer</button>
+                    <button id="pauseTimerButton" disabled>Pause</button>
+                    <button id="resetTimerButton">Reset</button>
+                </div>
+            </div>
+
+            <!-- Facial expression guide -->
+            <div class="expression-guide">
+                <p>Look down to make the face react</p>
             </div>
         </div>
+        
+        <!-- Dialogs -->
         <div id="distractionDialog" class="dialog hidden">
-            <button class="close-button">×</button>
+            <button class="close-button">&times;</button>
             <h2>Why were you distracted?</h2>
             <textarea id="distractionReason" placeholder="Describe what distracted you..."></textarea>
             <button id="submitDistraction">Submit</button>
         </div>
+        
         <div id="breakDialog" class="dialog hidden">
             <h2>Time for a break!</h2>
             <p>You've completed a focus session. Take a short break to recharge.</p>
             <button id="startBreakButton">Start Break</button>
             <button id="skipBreakButton">Skip Break</button>
         </div>
-        <audio id="chimeSound" src="https://assets.mixkit.co/active_storage/sfx/2869/2869-preview.mp3"></audio>
-        <audio id="timerCompleteSound" src="https://assets.mixkit.co/active_storage/sfx/1529/1529-preview.mp3"></audio>
+        
+        <!-- Settings Dialog -->
+        <div id="settingsDialog" class="dialog hidden">
+            <button class="close-button">&times;</button>
+            <h2>Sound Settings</h2>
+            <div class="settings-section">
+                <label for="distractionSound">Distraction Alert Sound:</label>
+                <select id="distractionSound" class="sound-select">
+                    <option value="https://assets.mixkit.co/active_storage/sfx/2869/2869-preview.mp3">Default Bell</option>
+                    <option value="https://assets.mixkit.co/active_storage/sfx/2867/2867-preview.mp3">Gentle Chime</option>
+                    <option value="https://assets.mixkit.co/active_storage/sfx/951/951-preview.mp3">Alert Tone</option>
+                    <option value="https://assets.mixkit.co/active_storage/sfx/219/219-preview.mp3">Game Alert</option>
+                    <option value="https://assets.mixkit.co/active_storage/sfx/1862/1862-preview.mp3">Soft Bell</option>
+                </select>
+                <button id="testSoundButton" class="small-button">Test Sound</button>
+            </div>
+            <button id="saveSettings">Save Settings</button>
+        </div>
+        
+        <!-- Audio elements -->
+        <audio id="chimeSound" src="https://assets.mixkit.co/active_storage/sfx/2869/2869-preview.mp3" preload="auto"></audio>
+        <audio id="timerCompleteSound" src="https://assets.mixkit.co/active_storage/sfx/1529/1529-preview.mp3" preload="auto"></audio>
+        <audio id="pointEarnedSound" src="https://assets.mixkit.co/active_storage/sfx/270/270-preview.mp3" preload="auto"></audio>
+        <audio id="levelUpSound" src="https://assets.mixkit.co/active_storage/sfx/2/2-preview.mp3" preload="auto"></audio>
     </div>
+    
+    <!-- Scripts -->
     <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs"></script>
     <script src="https://cdn.jsdelivr.net/npm/@tensorflow-models/blazeface"></script>
     <script src="script.js"></script>
