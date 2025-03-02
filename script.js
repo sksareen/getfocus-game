@@ -2,7 +2,7 @@ let model;
 let webcam;
 let isMonitoring = false;
 let lastFaceDetectedTime = Date.now();
-const DISTRACTION_THRESHOLD = 600; // Reduced from 750ms to 600ms for quicker response
+const DISTRACTION_THRESHOLD = 800; // Reduced from 750ms to 600ms for quicker response
 let checkFaceInterval;
 let lastFacePosition = { x: 100, y: 100 };
 let distractionStartTime = 0;
@@ -68,7 +68,7 @@ const FACE_SENSITIVITY = 4; // Increased from 2 to 4 for more motion
 
 // Performance constants
 const MOBILE_CHECK_INTERVAL = 300; // ms between face checks on mobile
-const DESKTOP_CHECK_INTERVAL = 200; // ms between face checks on desktop
+const DESKTOP_CHECK_INTERVAL = 300; // ms between face checks on desktop
 const RENDER_THROTTLE = 50; // ms between face canvas renders
 const POINTS_UPDATE_INTERVAL = 1000; // ms between points updates
 
@@ -178,7 +178,7 @@ function checkBrowserCompatibility() {
     } else if (userAgent.indexOf('Edge') > -1 || userAgent.indexOf('Edg') > -1) {
         browserInfo = 'Edge';
     } else {
-        browserInfo = 'Unknown Browser';
+        browserInfo = 'Unknown Browser';d
     }
     
     // Check browser permissions state if available
@@ -703,7 +703,18 @@ async function startMonitoring() {
         isMonitoring = true;
         mainActionButton.textContent = 'Pause';
         mainActionButton.classList.add('active');
-        resetButton.disabled = true;
+        
+        // Only disable the reset button if we're in the middle of a focus session
+        // This change allows the reset button to be clicked during breaks or when paused
+        if (isTimerRunning && !isInBreak) {
+            resetButton.disabled = true;
+            debugLog('Reset button disabled during focus session', null, 'timer');
+        } else {
+            // Keep the reset button enabled during other states
+            resetButton.disabled = false;
+            debugLog('Reset button remains enabled', null, 'timer');
+        }
+        
         statusElement.textContent = 'Monitoring your focus...';
         
         // Store the initial focus points for session calculation
@@ -972,16 +983,28 @@ function pauseTimer() {
         timerRemainingTime = timerEndTime - currentTime;
         
         // Update UI
-        document.getElementById('mainActionButton').textContent = 'Resume';
-        document.getElementById('mainActionButton').classList.remove('active');
+        const mainActionBtn = document.getElementById('mainActionButton');
+        if (mainActionBtn) {
+            mainActionBtn.textContent = 'Resume';
+            mainActionBtn.classList.remove('active');
+        }
+        
+        // Enable the reset button when paused
+        const resetBtn = document.getElementById('resetButton');
+        if (resetBtn) {
+            resetBtn.disabled = false;
+            debugLog('Reset button enabled on pause', null, 'timer');
+        }
         
         // Remove the running animation class
         const timerDisplay = document.getElementById('timerDisplay');
-        timerDisplay.classList.remove('running');
+        if (timerDisplay) {
+            timerDisplay.classList.remove('running');
+        }
         
         debugLog('Timer paused, animation stopped', { 
             remaining: timerRemainingTime,
-            timerClass: timerDisplay.className
+            timerClass: timerDisplay ? timerDisplay.className : 'unknown'
         }, 'timer');
     }
 }
@@ -996,12 +1019,22 @@ function resumeTimer() {
         timerEndTime = timerStartTime + timerRemainingTime;
         
         // Update UI
-        document.getElementById('mainActionButton').textContent = 'Pause';
-        document.getElementById('mainActionButton').classList.add('active');
+        const mainActionBtn = document.getElementById('mainActionButton');
+        if (mainActionBtn) {
+            mainActionBtn.textContent = 'Pause';
+            mainActionBtn.classList.add('active');
+        }
+        
+        // Only disable the reset button during focused sessions, not during breaks
+        const resetBtn = document.getElementById('resetButton');
+        if (resetBtn && !isInBreak) {
+            resetBtn.disabled = true;
+            debugLog('Reset button disabled on resume during focus session', null, 'timer');
+        }
         
         // Add the running animation class back
         const timerDisplay = document.getElementById('timerDisplay');
-        if (!timerDisplay.classList.contains('running')) {
+        if (timerDisplay && !timerDisplay.classList.contains('running')) {
             timerDisplay.classList.add('running');
         }
         
@@ -1012,7 +1045,7 @@ function resumeTimer() {
         timerInterval = setInterval(updateTimer, 250); // Update every 250ms for smoother countdown
         
         debugLog('Timer resumed with animation', { 
-            timerClass: timerDisplay.className,
+            timerClass: timerDisplay ? timerDisplay.className : 'unknown',
             remainingTime: timerRemainingTime,
             endTime: new Date(timerEndTime).toISOString()
         }, 'timer');
@@ -1104,7 +1137,7 @@ function updateTimer() {
     }
     
     // Add warning class when 10% of time remains
-    const warningThreshold = 0.1 * timerDuration;
+    const warningThreshold = 0.5 * timerDuration;
     if (timeRemaining <= warningThreshold && !timerDisplay.classList.contains('warning')) {
         timerDisplay.classList.add('warning');
         debugLog('Timer entered warning state', { 
@@ -1135,45 +1168,68 @@ function updateTimerDisplay(totalSeconds) {
 }
 
 function timerComplete() {
+    debugLog('Timer complete, current mode: ' + (isInBreak ? 'break' : 'focus'), null, 'timer');
+    
     clearInterval(timerInterval);
     isTimerRunning = false;
+    timerRemainingTime = 0;
     
     // Play completion sound
-    timerCompleteSound.currentTime = 0;
-    timerCompleteSound.play().catch(e => console.log('Sound play error:', e));
+    if (timerCompleteSound) {
+        timerCompleteSound.currentTime = 0;
+        timerCompleteSound.play().catch(e => console.log('Sound play error:', e));
+    }
     
     // Get DOM elements we need
-    const mainActionButton = document.getElementById('mainActionButton');
-    const resetButton = document.getElementById('resetButton');
+    const mainActionBtn = document.getElementById('mainActionButton');
+    const resetBtn = document.getElementById('resetButton');
     const breakDialog = document.getElementById('breakDialog');
     const timerDisplay = document.getElementById('timerDisplay');
+    
+    // Always make sure reset button is enabled
+    if (resetBtn) {
+        resetBtn.disabled = false;
+        debugLog('Reset button enabled at timer completion', null, 'timer');
+    }
     
     // Check if we're in focus mode
     if (!isInBreak) {
         // We were in focus mode, show break dialog
         isMonitoring = false;
-        clearInterval(checkFaceInterval);
+        if (checkFaceInterval) {
+            clearInterval(checkFaceInterval);
+            checkFaceInterval = null;
+        }
         
         // Stop the points system
         stopPointsAccumulation();
         
         // Reset button states
-        mainActionButton.textContent = 'Start Studying';
-        mainActionButton.classList.remove('active');
-        resetButton.disabled = false;
+        if (mainActionBtn) {
+            mainActionBtn.textContent = 'Start Studying';
+            mainActionBtn.classList.remove('active');
+        }
         
         // Show break dialog
-        breakDialog.classList.remove('hidden');
-        timerDisplay.className = 'timer-display break';
+        if (breakDialog) {
+            breakDialog.classList.remove('hidden');
+        }
+        
+        if (timerDisplay) {
+            timerDisplay.className = 'timer-display break';
+        }
         
         debugLog('Focus timer complete, showing break dialog', {
-            timerClass: timerDisplay.className,
+            timerClass: timerDisplay ? timerDisplay.className : 'unknown',
             isMonitoring
         }, 'timer');
     } else {
         // Break timer completed
         resetTimer();
-        timerDisplay.className = 'timer-display';
+        
+        if (timerDisplay) {
+            timerDisplay.className = 'timer-display';
+        }
         
         debugLog('Break timer complete', null, 'timer');
     }
@@ -1710,9 +1766,27 @@ document.addEventListener('DOMContentLoaded', function() {
     if (resetButton) {
         resetButton.addEventListener('click', function() {
             debugLog('Reset button clicked, calling resetTimer function', null, 'timer');
+            
+            // Force stop monitoring first if it's running
+            if (isMonitoring) {
+                debugLog('Stopping monitoring before reset', null, 'timer');
+                stopMonitoring();
+            }
+            
+            // Call resetTimer function
             resetTimer();
+            
+            // Always re-enable the reset button to ensure it's not stuck
+            resetButton.disabled = false;
+            
+            // Update the main action button state
+            const mainActionBtn = document.getElementById('mainActionButton');
+            if (mainActionBtn) {
+                mainActionBtn.textContent = 'Start Studying';
+                mainActionBtn.classList.remove('active');
+            }
         });
-        debugLog('Added click handler to resetButton', null, 'timer');
+        debugLog('Added enhanced click handler to resetButton', null, 'timer');
     } else {
         debugLog('Reset button not found in the DOM', null, 'timer');
     }
