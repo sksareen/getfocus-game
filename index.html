@@ -50,6 +50,13 @@
                             <div id="pointsProgressBar" class="points-progress-bar">
                                 <div id="pointsProgressFill" class="points-progress-fill"></div>
                             </div>
+                            
+                            <!-- Integrated milestone markers -->
+                            <div class="milestone-markers">
+                                <div class="milestone-marker" style="left: 20%" title="2 min: +5 points">2m</div>
+                                <div class="milestone-marker" style="left: 50%" title="5 min: +15 points">5m</div>
+                                <div class="milestone-marker" style="left: 80%" title="10 min: +30 points">10m</div>
+                            </div>
                         </div>
                         
                         <div class="points-info">Earn points by maintaining focus!</div>
@@ -58,56 +65,25 @@
                 
                 <div class="status-container">
                     <p id="status">Getting ready...</p>
-                    <div id="timerDisplay" class="timer-display">25:00</div>
-                    <div class="timer-controls-compact">
-                        <button id="pauseTimerButton" disabled>Pause</button>
-                        <button id="resetTimerButton">Reset</button>
+                    <div class="timer-container">
+                        <div id="timerDisplay" class="timer-display">25:00</div>
+                        <div class="timer-settings">
+                            <label for="workDuration">Focus: </label>
+                            <input type="number" id="workDuration" min="1" max="60" value="25">
+                            <span>min</span>
+                            
+                            <label for="breakDuration">Break: </label>
+                            <input type="number" id="breakDuration" min="1" max="30" value="5">
+                            <span>min</span>
+                        </div>
+                    </div>
+                    <div class="consolidated-controls">
+                        <button id="mainActionButton">Start Studying</button>
+                        <button id="resetButton">Reset</button>
                     </div>
                 </div>
             </div>
             
-            <div class="controls">
-                <button id="startButton">Start Studying</button>
-                <button id="stopButton" disabled>Stop</button>
-            </div>
-            
-            <div class="timer-controls">
-                <div class="timer-settings">
-                    <label for="workDuration">Focus time (min):</label>
-                    <input type="number" id="workDuration" min="1" max="60" value="25">
-                    <label for="breakDuration">Break time (min):</label>
-                    <input type="number" id="breakDuration" min="1" max="30" value="5">
-                </div>
-                <div class="timer-info">
-                    <p>Timer starts with studying</p>
-                </div>
-                <!-- Timer buttons hidden and replaced with compact controls -->
-                <div class="timer-buttons" style="display: none;">
-                    <button id="startTimerButton">Start Timer</button>
-                    <button id="pauseTimerButton" disabled>Pause</button>
-                    <button id="resetTimerButton">Reset</button>
-                </div>
-            </div>
-
-            <!-- Study Milestone Guide -->
-            <div class="milestone-guide">
-                <p>Reach focus milestones to earn bonus points!</p>
-                <div class="milestone-stats">
-                    <div class="milestone-stat">
-                        <span class="milestone-time">2m</span>
-                        <span class="milestone-points">+5</span>
-                    </div>
-                    <div class="milestone-stat">
-                        <span class="milestone-time">5m</span>
-                        <span class="milestone-points">+15</span>
-                    </div>
-                    <div class="milestone-stat">
-                        <span class="milestone-time">10m</span>
-                        <span class="milestone-points">+30</span>
-                    </div>
-                </div>
-            </div>
-
             <!-- Facial expression guide -->
             <div class="expression-guide">
                 <p>Look down to make the face react</p>

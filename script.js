@@ -16,6 +16,12 @@ let timerPausedTime = 0;
 let currentTimerMode = 'focus'; // 'focus' or 'break'
 let isTimerRunning = false;
 let timerCurrentTime = 25 * 60 * 1000; // Default 25 minutes in milliseconds
+// Additional timer variables
+let timerEndTime = 0;
+let timerDuration = 0;
+let timerRemainingTime = 0;
+let workDuration = 25; // Default work duration in minutes
+let isInBreak = false;
 
 // Points system variables
 let focusPoints = 0;
@@ -29,8 +35,8 @@ const LEVEL_THRESHOLDS = [0, 100, 250, 500, 1000, 2000, 3500, 5000, 7500, 10000]
 // DOM elements
 const webcamElement = document.getElementById('webcam');
 const statusElement = document.getElementById('status');
-const startButton = document.getElementById('startButton');
-const stopButton = document.getElementById('stopButton');
+const mainActionButton = document.getElementById('mainActionButton');
+const resetButton = document.getElementById('resetButton');
 const distractionDialog = document.getElementById('distractionDialog');
 const submitDistractionButton = document.getElementById('submitDistraction');
 const distractionReasonInput = document.getElementById('distractionReason');
@@ -46,9 +52,6 @@ const levelUpSound = document.getElementById('levelUpSound');
 // Timer controls
 const workDurationInput = document.getElementById('workDuration');
 const breakDurationInput = document.getElementById('breakDuration');
-const startTimerButton = document.getElementById('startTimerButton');
-const pauseTimerButton = document.getElementById('pauseTimerButton');
-const resetTimerButton = document.getElementById('resetTimerButton');
 const breakDialog = document.getElementById('breakDialog');
 const startBreakButton = document.getElementById('startBreakButton');
 const skipBreakButton = document.getElementById('skipBreakButton');
@@ -61,7 +64,7 @@ faceCanvas.width = 200;
 faceCanvas.height = 200;
 
 // Make face tracking more sensitive by adjusting these values
-const FACE_SENSITIVITY = 2; // Higher value = more sensitive (default was 1)
+const FACE_SENSITIVITY = 4; // Increased from 2 to 4 for more motion
 
 // Performance constants
 const MOBILE_CHECK_INTERVAL = 300; // ms between face checks on mobile
@@ -73,8 +76,8 @@ const POINTS_UPDATE_INTERVAL = 1000; // ms between points updates
 const elements = {
     webcam: document.getElementById('webcam'),
     status: document.getElementById('status'),
-    startButton: document.getElementById('startButton'),
-    stopButton: document.getElementById('stopButton'),
+    mainActionButton: document.getElementById('mainActionButton'),
+    resetButton: document.getElementById('resetButton'),
     distractionDialog: document.getElementById('distractionDialog'),
     faceCanvas: document.getElementById('faceCanvas'),
     timerDisplay: document.getElementById('timerDisplay'),
@@ -98,16 +101,19 @@ let continuousFocusStartTime = 0;
 let notificationTimeout = null;
 let notificationElement = null;
 
-// Add debug flag to enable verbose logging
-const DEBUG = true;
+// Debug flags - just keep timer debugging
+const DEBUG = false;
+const DEBUG_TIMER = true;
 
-// Debug logger
-function debugLog(message, obj = null) {
-    if (!DEBUG) return;
-    if (obj) {
-        console.log(`[DEBUG] ${message}`, obj);
-    } else {
-        console.log(`[DEBUG] ${message}`);
+// Enhanced debug logging function with type parameter
+function debugLog(message, obj = null, type = 'general') {
+    // Only log if debugging is enabled for the specific type
+    if ((type === 'general' && DEBUG) || (type === 'timer' && DEBUG_TIMER)) {
+        if (obj !== null) {
+            console.log(`${type === 'timer' ? '[TIMER] ' : ''}${message}`, obj);
+        } else {
+            console.log(`${type === 'timer' ? '[TIMER] ' : ''}${message}`);
+        }
     }
 }
 
@@ -245,38 +251,62 @@ function validateHTMLElements() {
 
 // Initialize the app when the page loads
 document.addEventListener('DOMContentLoaded', () => {
-    debugLog('DOMContentLoaded event fired');
-    
-    // Validate DOM elements first
-    const elementsCheck = validateHTMLElements();
-    
-    // Check browser features before continuing
-    debugLog('Checking browser features');
-    const features = {
-        mediaDevices: !!navigator.mediaDevices,
-        getUserMedia: !!(navigator.mediaDevices && navigator.mediaDevices.getUserMedia),
-        secureContext: window.isSecureContext,
-        permissions: !!navigator.permissions,
-        localStorage: !!window.localStorage
-    };
-    
-    debugLog('Browser features check:', features);
-    
-    // Check for any obvious issues that would prevent camera access
-    if (!features.mediaDevices) {
-        console.error('MediaDevices API not available - camera access will fail');
-    }
-    
-    if (!features.secureContext) {
-        console.error('Not in a secure context (HTTPS) - camera access will fail');
-    }
-    
-    // Only attempt initialization if critical elements exist
-    if (elementsCheck.webcam && elementsCheck.loading) {
-        debugLog('Critical elements found, calling init()');
+    try {
+        debugLog('DOM Content Loaded, initializing app');
+        
+        // Initialize notification system
+        createNotificationSystem();
+        
+        // DOM element validation
+        validateHTMLElements();
+        
+        // Set up handlers for the mobile experience
+        setupMobileHandlers();
+        
+        // Setup settings dialog handlers
+        setupSettingsDialogHandlers();
+        
+        // Initialize the app
         init();
-    } else {
-        console.error('Cannot initialize app - critical HTML elements are missing');
+        
+        // Button event handlers for the consolidated controls - remove duplicates
+        /* 
+        // Removed to avoid duplicate listeners
+        mainActionButton.addEventListener('click', () => {
+            if (isMonitoring) {
+                stopMonitoring();
+            } else {
+                startMonitoring();
+            }
+        });
+        
+        resetButton.addEventListener('click', () => {
+            resetTimer();
+        });
+        */
+        
+        // Bind work duration input to immediately update timer display
+        /* 
+        // Removed to avoid duplicate listeners
+        workDurationInput.addEventListener('change', () => {
+            if (!isTimerRunning) {
+                timerCurrentTime = workDurationInput.value * 60 * 1000;
+                updateTimerDisplay();
+            }
+        });
+        */
+        
+        // Start break and skip break button handlers
+        document.getElementById('startBreakButton').addEventListener('click', startBreak);
+        document.getElementById('skipBreakButton').addEventListener('click', skipBreak);
+        
+        // Initial face rendering
+        drawFace(true);
+        
+    } catch (error) {
+        console.error('Initialization error:', error);
+        debugLog('Initialization error:', error);
+        showNotification('Failed to initialize app. Please reload the page.', 'error');
     }
 });
 
@@ -287,7 +317,6 @@ function drawFace(isFocused = true, faceX = null, faceY = null) {
     if (now - lastRenderTime < RENDER_THROTTLE) return;
     lastRenderTime = now;
     
-    // Rest of the drawFace function as before
     ctx.clearRect(0, 0, faceCanvas.width, faceCanvas.height);
     
     const centerX = 100; 
@@ -297,14 +326,15 @@ function drawFace(isFocused = true, faceX = null, faceY = null) {
     let offsetY = 0;
     
     if (faceX !== null && faceY !== null) {
-        offsetX = Math.max(-12, Math.min(12, (faceX - 320) / (32 / FACE_SENSITIVITY)));
-        offsetY = Math.max(-12, Math.min(12, (faceY - 240) / (24 / FACE_SENSITIVITY)));
+        // Increased sensitivity for more movement
+        offsetX = Math.max(-20, Math.min(20, (faceX - 320) / (24 / FACE_SENSITIVITY)));
+        offsetY = Math.max(-20, Math.min(20, (faceY - 240) / (18 / FACE_SENSITIVITY)));
     }
     
     const adjustedX = centerX + offsetX;
     const adjustedY = centerY + offsetY;
     
-    // Draw face background with minimal gradient
+    // Draw face background with improved gradient
     const faceGradient = ctx.createRadialGradient(
         adjustedX, adjustedY - 5, 5,
         adjustedX, adjustedY, 45
@@ -317,13 +347,13 @@ function drawFace(isFocused = true, faceX = null, faceY = null) {
     ctx.arc(adjustedX, adjustedY, 45, 0, Math.PI * 2);
     ctx.fill();
     
-    // Add a minimal highlight
-    ctx.fillStyle = 'rgba(255, 255, 255, 0.15)';
+    // Add improved highlight for more 3D effect
+    ctx.fillStyle = 'rgba(255, 255, 255, 0.2)';
     ctx.beginPath();
-    ctx.arc(adjustedX - 15, adjustedY - 15, 20, 0, Math.PI * 2);
+    ctx.arc(adjustedX - 15, adjustedY - 15, 25, 0, Math.PI * 2);
     ctx.fill();
     
-    // Draw eyes
+    // Draw eyes with improved animation
     const leftEyeX = adjustedX - 15;
     const rightEyeX = adjustedX + 15;
     const eyeY = adjustedY - 10;
@@ -331,17 +361,49 @@ function drawFace(isFocused = true, faceX = null, faceY = null) {
     ctx.fillStyle = '#333';
     
     if (isFocused) {
-        const pupilOffsetX = offsetX * 0.2;
-        const pupilOffsetY = offsetY * 0.2;
+        // More responsive eye movement
+        const pupilOffsetX = offsetX * 0.3;
+        const pupilOffsetY = offsetY * 0.3;
         
-        ctx.beginPath();
-        ctx.arc(leftEyeX + pupilOffsetX, eyeY + pupilOffsetY, 5, 0, Math.PI * 2);
-        ctx.fill();
+        // Blink occasionally
+        const shouldBlink = Math.random() < 0.005;
         
-        ctx.beginPath();
-        ctx.arc(rightEyeX + pupilOffsetX, eyeY + pupilOffsetY, 5, 0, Math.PI * 2);
-        ctx.fill();
+        if (shouldBlink) {
+            // Blinking eyes
+            ctx.lineWidth = 3;
+            ctx.beginPath();
+            ctx.moveTo(leftEyeX - 7, eyeY);
+            ctx.lineTo(leftEyeX + 7, eyeY);
+            ctx.stroke();
+            
+            ctx.beginPath();
+            ctx.moveTo(rightEyeX - 7, eyeY);
+            ctx.lineTo(rightEyeX + 7, eyeY);
+            ctx.stroke();
+        } else {
+            // Regular eyes with pupils
+            ctx.beginPath();
+            ctx.arc(leftEyeX, eyeY, 7, 0, Math.PI * 2);
+            ctx.fillStyle = 'white';
+            ctx.fill();
+            
+            ctx.beginPath();
+            ctx.arc(rightEyeX, eyeY, 7, 0, Math.PI * 2);
+            ctx.fillStyle = 'white';
+            ctx.fill();
+            
+            // Pupils
+            ctx.fillStyle = '#333';
+            ctx.beginPath();
+            ctx.arc(leftEyeX + pupilOffsetX, eyeY + pupilOffsetY, 4, 0, Math.PI * 2);
+            ctx.fill();
+            
+            ctx.beginPath();
+            ctx.arc(rightEyeX + pupilOffsetX, eyeY + pupilOffsetY, 4, 0, Math.PI * 2);
+            ctx.fill();
+        }
     } else {
+        // Distracted/sleepy eyes
         ctx.beginPath();
         ctx.ellipse(leftEyeX, eyeY, 6, 4, Math.PI/4, 0, Math.PI * 2);
         ctx.fill();
@@ -351,24 +413,27 @@ function drawFace(isFocused = true, faceX = null, faceY = null) {
         ctx.fill();
     }
     
-    // Draw mouth
+    // Draw mouth with more expression
     ctx.strokeStyle = '#333';
     ctx.lineWidth = 2;
     
     if (isFocused) {
+        // Happier mouth with slight variance
+        const smileIntensity = 0.2 + (Math.random() * 0.1); // Small variance in smile
         ctx.beginPath();
-        ctx.arc(adjustedX, adjustedY + 15, 20, 0.2, Math.PI - 0.2);
+        ctx.arc(adjustedX, adjustedY + 15, 20, smileIntensity, Math.PI - smileIntensity);
         ctx.stroke();
     } else {
+        // Sad/distracted mouth
         ctx.beginPath();
-        ctx.arc(adjustedX, adjustedY + 25, 20, Math.PI + 0.2, 2 * Math.PI - 0.2);
+        ctx.arc(adjustedX, adjustedY + 25, 20, Math.PI + 0.3, 2 * Math.PI - 0.3);
         ctx.stroke();
     }
 
     // Draw progress indicator when monitoring
     if (isMonitoring) {
-    const timeSinceLastDetection = Date.now() - lastFaceDetectedTime;
-    const progress = Math.min(1, timeSinceLastDetection / DISTRACTION_THRESHOLD);
+        const timeSinceLastDetection = Date.now() - lastFaceDetectedTime;
+        const progress = Math.min(1, timeSinceLastDetection / DISTRACTION_THRESHOLD);
     
         let circleColor = isFocused ? '#4CAF50' : '#F44336';
         if (isFocused && progress > 0.5) {
@@ -590,132 +655,162 @@ document.querySelectorAll('input[type="number"]').forEach(input => {
     });
 });
 
-// Start monitoring - also starts the timer
+// Make sure we have working variables at startup
+async function checkInitialization() {
+    debugLog('Checking initialization state', null, 'timer');
+    
+    if (!webcam || !model) {
+        debugLog('Webcam or model not initialized, retrying initialization', null, 'timer');
+        
+        try {
+            // Try to initialize the webcam
+            if (!webcam) {
+                webcam = document.getElementById('webcam');
+                if (webcam) {
+                    await setupWebcam();
+                }
+            }
+            
+            // Try to initialize the model
+            if (!model) {
+                model = await blazeface.load();
+            }
+            
+            return !!webcam && !!model;
+        } catch (error) {
+            console.error('Initialization check failed:', error);
+            debugLog('Initialization check failed:', error, 'timer');
+            return false;
+        }
+    }
+    
+    return true;
+}
+
+// Modify the startMonitoring function to check initialization first
 async function startMonitoring() {
-    isMonitoring = true;
-    elements.startButton.disabled = true;
-    elements.stopButton.disabled = false;
-    lastFaceDetectedTime = Date.now();
-    totalDistractedTime = 0;
-    sessionStartTime = Date.now();
-    continuousFocusStartTime = Date.now(); // Start tracking continuous focus time
-    reachedMilestones = []; // Reset milestones
-    elements.status.textContent = 'Monitoring your focus...';
-    elements.status.className = 'focused';
+    if (isMonitoring) return;
     
-    // Adjust check interval based on device for performance
-    const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
-    const checkInterval = isMobile ? 
-        MOBILE_CHECK_INTERVAL : 
-        DESKTOP_CHECK_INTERVAL;
-    
-    checkFaceInterval = setInterval(checkFace, checkInterval);
-    
-    startPointsAccumulation();
-    startTimer();
-    
-    document.querySelector('.webcam-container').classList.add('active');
-    
-    // Show an encouraging notification to start
-    showNotification("Focus session started! 💪 First milestone: 2 minutes", "success");
+    try {
+        // Check and retry initialization if needed
+        const isInitialized = await checkInitialization();
+        
+        if (!isInitialized) {
+            showNotification('Camera or AI model not ready. Please reload the page.', 'error');
+            return;
+        }
+        
+        isMonitoring = true;
+        mainActionButton.textContent = 'Pause';
+        mainActionButton.classList.add('active');
+        resetButton.disabled = true;
+        statusElement.textContent = 'Monitoring your focus...';
+        
+        // Store the initial focus points for session calculation
+        focusPointsAtStart = focusPoints;
+        
+        // Start tracking face - fix the isMobile reference
+        const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
+        const checkInterval = isMobile ? MOBILE_CHECK_INTERVAL : DESKTOP_CHECK_INTERVAL;
+        checkFaceInterval = setInterval(checkFace, checkInterval);
+        
+        // Start points accumulation
+        startPointsAccumulation();
+        
+        // Start timer
+        startTimer();
+        
+        // Reset continuous focus tracking
+        continuousFocusStartTime = Date.now();
+        reachedMilestones = [];
+        
+        // Update notification
+        showNotification('Focus monitoring started', 'success');
+        
+        // Set session start time for analytics
+        sessionStartTime = Date.now();
+        totalDistractedTime = 0;
+        
+        debugLog('Monitoring started, timer started', { isMonitoring, isTimerRunning }, 'timer');
+    } catch (error) {
+        // If anything fails, reset the state
+        console.error('Error starting monitoring:', error);
+        debugLog('Error in startMonitoring:', error, 'timer');
+        
+        isMonitoring = false;
+        mainActionButton.textContent = 'Start Studying';
+        mainActionButton.classList.remove('active');
+        resetButton.disabled = false;
+        showNotification('Failed to start monitoring. Try again.', 'error');
+    }
 }
 
-// Stop monitoring - also stops the timer
 function stopMonitoring() {
-    isMonitoring = false;
-    elements.startButton.disabled = false;
-    elements.stopButton.disabled = true;
-    elements.status.textContent = 'Monitoring stopped';
-    elements.status.className = '';
-    clearInterval(checkFaceInterval);
+    if (!isMonitoring) return;
     
-    // Stop points accumulation
-    stopPointsAccumulation();
-    
-    // Reset face animation
-    drawFace(true);
-    faceCanvas.classList.remove('pulsing');
-    faceCanvas.classList.add('floating');
-    
-    // Also pause the timer
-    if (isTimerRunning) {
+    try {
+        isMonitoring = false;
+        
+        // Clear intervals
+        if (checkFaceInterval) {
+            clearInterval(checkFaceInterval);
+            checkFaceInterval = null;
+        }
+        
+        // Update UI
+        const mainActionBtn = document.getElementById('mainActionButton');
+        const resetBtn = document.getElementById('resetButton');
+        const statusElem = document.getElementById('status');
+        
+        if (mainActionBtn) {
+            mainActionBtn.textContent = 'Start Studying';
+            mainActionBtn.classList.remove('active');
+        }
+        
+        if (resetBtn) {
+            resetBtn.disabled = false;
+        }
+        
+        if (statusElem) {
+            statusElem.textContent = 'Monitoring stopped';
+        }
+        
+        // Stop points accumulation
+        stopPointsAccumulation();
+        
+        // Pause timer
         pauseTimer();
-    }
-    
-    // Remove active class from webcam container
-    document.querySelector('.webcam-container').classList.remove('active');
-}
-
-// Create milestone indicators in the UI
-function createMilestoneIndicators() {
-    const container = document.createElement('div');
-    container.className = 'milestone-indicators';
-    
-    MILESTONES.forEach((milestone, index) => {
-        const indicator = document.createElement('div');
-        indicator.className = 'milestone-indicator';
-        indicator.id = `milestone-${milestone.duration}`;
-        indicator.innerHTML = `<span>${milestone.duration}m</span>`;
-        indicator.title = `Focus for ${milestone.duration} minutes to earn ${milestone.points} points`;
         
-        // Set the position based on index
-        indicator.style.left = `${(milestone.duration / 30) * 100}%`;
+        // Calculate total focused time
+        totalFocusedTime += (Date.now() - sessionStartTime) - totalDistractedTime;
         
-        container.appendChild(indicator);
-    });
-    
-    // Add the container to the points section
-    const pointsContainer = document.querySelector('.points-container');
-    if (pointsContainer) {
-        pointsContainer.appendChild(container);
+        // Show summary notification
+        let sessionLength = Math.round((Date.now() - sessionStartTime) / 60000);
+        let pointsEarned = focusPoints - focusPointsAtStart;
+        showNotification(`Session complete! ${sessionLength} min, earned ${pointsEarned} points`, 'success', 6000);
+        
+        debugLog('Monitoring stopped successfully', {
+            isMonitoring,
+            isTimerRunning,
+            sessionLength,
+            pointsEarned
+        }, 'timer');
+    } catch (error) {
+        console.error('Error in stopMonitoring:', error);
+        debugLog('Error in stopMonitoring:', error, 'timer');
+        
+        // Ensure we reset state even if there's an error
+        isMonitoring = false;
+        if (checkFaceInterval) {
+            clearInterval(checkFaceInterval);
+        }
+        
+        // Make sure the reset button is enabled
+        const resetBtn = document.getElementById('resetButton');
+        if (resetBtn) {
+            resetBtn.disabled = false;
+        }
     }
-}
-
-// Handle distraction event with non-intrusive notification
-function handleDistraction() {
-    // Don't trigger too frequently
-    if (Date.now() - distractionStartTime < 3000) return;
-    
-    distractionStartTime = Date.now();
-    
-    // Play a subtle sound
-    chimeSound.currentTime = 0;
-    chimeSound.volume = 0.2;
-    chimeSound.play();
-    
-    // Reset continuous focus time
-    const focusedForSeconds = Math.floor((Date.now() - continuousFocusStartTime) / 1000);
-    continuousFocusStartTime = Date.now();
-    
-    // Show non-intrusive notification instead of dialog
-    showNotification(`
-        <div class="distraction-notification">
-            <h3>Distraction detected</h3>
-            <p>You were focused for ${formatTime(focusedForSeconds)}. Let's refocus!</p>
-        </div>
-    `, 'warning', 5000);
-    
-    // Update distracted time
-    totalDistractedTime += 3000; // Add a default distraction duration
-    updateStatus(false);
-}
-
-function updateStatus(isFocused) {
-    const focusedTime = Math.floor((Date.now() - sessionStartTime - totalDistractedTime) / 1000);
-    const distractedTime = Math.floor(totalDistractedTime / 1000);
-    
-    if (isFocused) {
-        elements.status.textContent = `Focused for ${formatTime(focusedTime)} | Distracted: ${formatTime(distractedTime)}`;
-    } else {
-        elements.status.textContent = `Distracted! Focus time: ${formatTime(focusedTime)}`;
-    }
-}
-
-// Format time in seconds to MM:SS format
-function formatTime(timeInSeconds) {
-    const minutes = Math.floor(timeInSeconds / 60);
-    const seconds = timeInSeconds % 60;
-    return `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
 }
 
 // Points System Functions
@@ -745,41 +840,41 @@ function stopPointsAccumulation() {
 }
 
 function addPoints(points, isMilestone = false) {
-    if (points <= 0) return;
-    
-    // Apply points
+    // Existing points calculation
     focusPoints += points;
     
-    // Update display with animation
+    // Update display
     elements.pointsDisplay.textContent = focusPoints;
-    elements.pointsDisplay.classList.add(isMilestone ? 'milestone-earned' : 'point-earned');
     
-    // Update the progress indicator
+    // Add animation for points earned
+    elements.pointsDisplay.classList.add('points-animate');
+    setTimeout(() => {
+        elements.pointsDisplay.classList.remove('points-animate');
+    }, 600);
+    
+    // Play sound effect
+    pointEarnedSound.currentTime = 0;
+    pointEarnedSound.play().catch(e => console.log('Sound play error:', e));
+    
+    // Check level up
+    checkLevelUp();
+    
+    // Update progress bar
     updatePointsProgressIndicator();
     
-    // Add pulse effect to progress bar
-    const progressFill = elements.pointsProgressFill;
-    if (progressFill) {
-        progressFill.classList.add(isMilestone ? 'milestone-pulse' : 'pulse');
+    // Display milestone notification if it's a milestone
+    if (isMilestone) {
+        // Create a milestone notification element
+        const notification = document.createElement('div');
+        notification.className = 'milestone-notification';
+        notification.textContent = `${points > 0 ? '+' + points : points} points - Milestone reached!`;
+        document.querySelector('.container').appendChild(notification);
+        
+        // Remove after animation completes
         setTimeout(() => {
-            progressFill.classList.remove('pulse');
-            progressFill.classList.remove('milestone-pulse');
-        }, 1000);
+            notification.remove();
+        }, 3000);
     }
-    
-    // Play sound
-    pointEarnedSound.currentTime = 0;
-    pointEarnedSound.volume = isMilestone ? 0.4 : 0.3;
-    pointEarnedSound.play();
-    
-    // Remove animation class after it completes
-    setTimeout(() => {
-        elements.pointsDisplay.classList.remove('point-earned');
-        elements.pointsDisplay.classList.remove('milestone-earned');
-    }, 500);
-    
-    // Check for level up
-    checkLevelUp();
 }
 
 function checkLevelUp() {
@@ -822,98 +917,221 @@ function checkLevelUp() {
 
 // Start the timer with better UX
 function startTimer() {
-    if (isTimerRunning) return;
-    
-    // Get timer settings
-    const workDuration = workDurationInput.value * 60 * 1000; // Convert minutes to ms
-    
-    // Initialize timer
-    timerCurrentTime = workDuration;
-    timerStartTime = Date.now(); // Fixed timer calculation
-    isTimerRunning = true;
-    currentTimerMode = 'focus';
-    
-    // Update UI
-    elements.timerDisplay.className = 'timer-display focus';
-    pauseTimerButton.disabled = false;
-    updateTimerDisplay();
-    
-    // Start the timer
-    timerInterval = setInterval(updateTimer, 500);
+    debugLog('Starting timer now', { workDuration, isTimerRunning, isMonitoring }, 'timer');
+    if (!isTimerRunning) {
+        isTimerRunning = true;
+        isInBreak = false;
+        
+        // Get the current work duration from the input field
+        const workDurationInput = document.getElementById('workDuration');
+        if (workDurationInput) {
+            workDuration = parseInt(workDurationInput.value, 10) || 25; // Default to 25 if parsing fails
+            debugLog('Retrieved work duration from input:', { workDuration }, 'timer');
+        } else {
+            // Ensure workDuration has a valid value
+            workDuration = workDuration || 25;
+            debugLog('Using existing work duration:', { workDuration }, 'timer');
+        }
+        
+        // Set timer display class to focus
+        const timerDisplay = document.getElementById('timerDisplay');
+        timerDisplay.className = 'timer-display focus running';
+        
+        timerStartTime = Date.now();
+        timerDuration = workDuration * 60 * 1000; // Convert minutes to milliseconds
+        timerEndTime = timerStartTime + timerDuration;
+        timerRemainingTime = timerDuration; // Initialize remaining time
+        
+        // Update main action button
+        document.getElementById('mainActionButton').textContent = 'Pause';
+        document.getElementById('mainActionButton').classList.add('active');
+        
+        // Update the timer immediately first
+        updateTimer();
+        
+        // Then set the interval for updates
+        timerInterval = setInterval(updateTimer, 250); // Update every 250ms for smoother countdown
+        
+        debugLog('Timer started with animation', { 
+            timerClass: timerDisplay.className,
+            duration: timerDuration,
+            startTime: new Date(timerStartTime).toISOString(),
+            endTime: new Date(timerEndTime).toISOString()
+        }, 'timer');
+    }
 }
 
 function pauseTimer() {
-    if (!isTimerRunning) return;
-    
-    clearInterval(timerInterval);
-    timerPausedTime = timerCurrentTime;
-    isTimerRunning = false;
-    
-    // Update UI
-    pauseTimerButton.textContent = 'Resume';
-    pauseTimerButton.disabled = false;
+    if (isTimerRunning) {
+        debugLog('Pausing timer', null, 'timer');
+        isTimerRunning = false;
+        clearInterval(timerInterval);
+        
+        // Store the remaining time
+        const currentTime = Date.now();
+        timerRemainingTime = timerEndTime - currentTime;
+        
+        // Update UI
+        document.getElementById('mainActionButton').textContent = 'Resume';
+        document.getElementById('mainActionButton').classList.remove('active');
+        
+        // Remove the running animation class
+        const timerDisplay = document.getElementById('timerDisplay');
+        timerDisplay.classList.remove('running');
+        
+        debugLog('Timer paused, animation stopped', { 
+            remaining: timerRemainingTime,
+            timerClass: timerDisplay.className
+        }, 'timer');
+    }
 }
 
 function resumeTimer() {
-    if (isTimerRunning) return;
-    
-    timerStartTime = Date.now() - (timerPausedTime - timerCurrentTime);
-    isTimerRunning = true;
-    
-    // Update UI
-    pauseTimerButton.textContent = 'Pause';
-    
-    // Restart the timer
-    timerInterval = setInterval(updateTimer, 500);
+    if (!isTimerRunning && timerRemainingTime > 0) {
+        debugLog('Resuming timer', { remainingTime: timerRemainingTime }, 'timer');
+        isTimerRunning = true;
+        
+        // Update the end time based on the remaining time
+        timerStartTime = Date.now();
+        timerEndTime = timerStartTime + timerRemainingTime;
+        
+        // Update UI
+        document.getElementById('mainActionButton').textContent = 'Pause';
+        document.getElementById('mainActionButton').classList.add('active');
+        
+        // Add the running animation class back
+        const timerDisplay = document.getElementById('timerDisplay');
+        if (!timerDisplay.classList.contains('running')) {
+            timerDisplay.classList.add('running');
+        }
+        
+        // Update the timer immediately first
+        updateTimer();
+        
+        // Then set the interval for updates
+        timerInterval = setInterval(updateTimer, 250); // Update every 250ms for smoother countdown
+        
+        debugLog('Timer resumed with animation', { 
+            timerClass: timerDisplay.className,
+            remainingTime: timerRemainingTime,
+            endTime: new Date(timerEndTime).toISOString()
+        }, 'timer');
+    } else {
+        debugLog('Cannot resume timer - not in the right state', { 
+            isTimerRunning,
+            timerRemainingTime
+        }, 'timer');
+    }
 }
 
 function resetTimer() {
-    // Clear any existing timer
-    clearInterval(timerInterval);
+    debugLog('Resetting timer', null, 'timer');
     
-    // Reset timer variables
-    timerCurrentTime = workDurationInput.value * 60 * 1000;
-    isTimerRunning = false;
-    timerPausedTime = 0;
-    currentTimerMode = 'focus';
-    
-    // Update UI
-    elements.timerDisplay.className = 'timer-display';
-    pauseTimerButton.disabled = true;
-    pauseTimerButton.textContent = 'Pause';
-    updateTimerDisplay();
+    try {
+        // Clear the timer interval
+        clearInterval(timerInterval);
+        isTimerRunning = false;
+        timerRemainingTime = 0;
+        isInBreak = false;  // Reset the break state as well
+        
+        // Reset the timer display
+        const timerDisplay = document.getElementById('timerDisplay');
+        if (timerDisplay) {
+            timerDisplay.className = 'timer-display';
+        }
+        
+        // Get the work duration from the input
+        const workDurationInput = document.getElementById('workDuration');
+        if (workDurationInput) {
+            workDuration = parseInt(workDurationInput.value, 10) || 25; // Default to 25 if parsing fails
+        }
+        updateTimerDisplay(workDuration * 60);
+        
+        // Reset the main action button
+        const mainActionBtn = document.getElementById('mainActionButton');
+        if (mainActionBtn) {
+            mainActionBtn.textContent = 'Start Studying';
+            mainActionBtn.classList.remove('active');
+        }
+        
+        // Enable the reset button for next use
+        const resetBtn = document.getElementById('resetButton');
+        if (resetBtn) {
+            resetBtn.disabled = false;
+        }
+        
+        debugLog('Timer reset, animation cleared', { 
+            timerClass: timerDisplay ? timerDisplay.className : 'unknown',
+            displayValue: timerDisplay ? timerDisplay.textContent : 'unknown'
+        }, 'timer');
+    } catch (error) {
+        console.error('Error in resetTimer:', error);
+        debugLog('Error in resetTimer function', error, 'timer');
+    }
 }
 
-// Update timer function with improved calculation
 function updateTimer() {
     if (!isTimerRunning) return;
     
-    // Calculate remaining time with simpler, more reliable algorithm
-    const elapsedTime = Date.now() - timerStartTime;
-    const totalTime = currentTimerMode === 'focus' ? 
-        workDurationInput.value * 60 * 1000 : 
-        breakDurationInput.value * 60 * 1000;
-    timerCurrentTime = Math.max(0, totalTime - elapsedTime);
+    const currentTime = Date.now();
+    const timeRemaining = timerEndTime - currentTime;
     
-    // Update display
-    updateTimerDisplay();
+    debugLog('Updating timer', { 
+        current: new Date(currentTime).toISOString(),
+        end: new Date(timerEndTime).toISOString(),
+        remaining: timeRemaining 
+    }, 'timer');
     
-    // Check if timer is completed
-    if (timerCurrentTime <= 0) {
+    if (timeRemaining <= 0) {
+        // Timer is complete
         timerComplete();
+        return;
     }
-    // Add warning class when less than 1 minute remaining
-    else if (timerCurrentTime < 60000 && !elements.timerDisplay.classList.contains('warning')) {
-        elements.timerDisplay.className = 'timer-display warning';
+    
+    // Calculate minutes and seconds
+    const totalSeconds = Math.floor(timeRemaining / 1000);
+    
+    // Update the timer display
+    updateTimerDisplay(totalSeconds);
+    
+    // Get timer display element
+    const timerDisplay = document.getElementById('timerDisplay');
+    
+    // Make sure the running class is added for animation
+    if (!timerDisplay.classList.contains('running')) {
+        timerDisplay.classList.add('running');
+        debugLog('Added running animation class', { timerClass: timerDisplay.className }, 'timer');
+    }
+    
+    // Add warning class when 10% of time remains
+    const warningThreshold = 0.1 * timerDuration;
+    if (timeRemaining <= warningThreshold && !timerDisplay.classList.contains('warning')) {
+        timerDisplay.classList.add('warning');
+        debugLog('Timer entered warning state', { 
+            remaining: timeRemaining,
+            threshold: warningThreshold,
+            timerClass: timerDisplay.className
+        }, 'timer');
     }
 }
 
-function updateTimerDisplay() {
-    const totalSeconds = Math.ceil(timerCurrentTime / 1000);
+function updateTimerDisplay(totalSeconds) {
+    // Handle the case when totalSeconds is undefined or NaN
+    if (totalSeconds === undefined || isNaN(totalSeconds)) {
+        // Default to workDuration if available, otherwise use 25 minutes
+        totalSeconds = workDuration ? workDuration * 60 : 25 * 60;
+    }
+    
     const minutes = Math.floor(totalSeconds / 60);
     const seconds = totalSeconds % 60;
     
-    elements.timerDisplay.textContent = `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+    // Format the timer display
+    const formattedTime = `${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`;
+    
+    // Update the timer display
+    document.getElementById('timerDisplay').textContent = formattedTime;
+    
+    debugLog(`Timer display updated to ${formattedTime}`, null, 'timer');
 }
 
 function timerComplete() {
@@ -922,66 +1140,88 @@ function timerComplete() {
     
     // Play completion sound
     timerCompleteSound.currentTime = 0;
-    timerCompleteSound.play();
+    timerCompleteSound.play().catch(e => console.log('Sound play error:', e));
     
-    if (currentTimerMode === 'focus') {
-        // Add bonus points for completing a focus session
-        const focusTimeMinutes = workDurationInput.value;
-        const bonusPoints = focusTimeMinutes * POINTS_PER_MINUTE;
-        addPoints(bonusPoints);
+    // Get DOM elements we need
+    const mainActionButton = document.getElementById('mainActionButton');
+    const resetButton = document.getElementById('resetButton');
+    const breakDialog = document.getElementById('breakDialog');
+    const timerDisplay = document.getElementById('timerDisplay');
+    
+    // Check if we're in focus mode
+    if (!isInBreak) {
+        // We were in focus mode, show break dialog
+        isMonitoring = false;
+        clearInterval(checkFaceInterval);
+        
+        // Stop the points system
+        stopPointsAccumulation();
+        
+        // Reset button states
+        mainActionButton.textContent = 'Start Studying';
+        mainActionButton.classList.remove('active');
+        resetButton.disabled = false;
         
         // Show break dialog
         breakDialog.classList.remove('hidden');
-        elements.timerDisplay.className = 'timer-display break';
+        timerDisplay.className = 'timer-display break';
+        
+        debugLog('Focus timer complete, showing break dialog', {
+            timerClass: timerDisplay.className,
+            isMonitoring
+        }, 'timer');
     } else {
-        // Focus session completed
+        // Break timer completed
         resetTimer();
-        elements.timerDisplay.className = 'timer-display focus';
+        timerDisplay.className = 'timer-display';
+        
+        debugLog('Break timer complete', null, 'timer');
     }
 }
 
 function startBreak() {
+    // Hide dialog
+    const breakDialog = document.getElementById('breakDialog');
     breakDialog.classList.add('hidden');
     
+    debugLog('Starting break timer', null, 'timer');
+    
     // Set up break timer
-    currentTimerMode = 'break';
-    timerCurrentTime = breakDurationInput.value * 60 * 1000;
+    const breakDuration = parseInt(document.getElementById('breakDuration').value, 10);
+    isInBreak = true;
+    
+    // Setup timer 
     timerStartTime = Date.now();
+    timerDuration = breakDuration * 60 * 1000; // Convert minutes to milliseconds
+    timerEndTime = timerStartTime + timerDuration;
     isTimerRunning = true;
     
     // Update UI
-    elements.timerDisplay.className = 'timer-display break';
-    pauseTimerButton.disabled = false;
+    const timerDisplay = document.getElementById('timerDisplay');
+    timerDisplay.className = 'timer-display break running';
     
-    // Start the break timer
-    timerInterval = setInterval(updateTimer, 500);
+    // Update the timer immediately first
+    updateTimer();
+    
+    // Then set the interval for updates
+    timerInterval = setInterval(updateTimer, 250);
+    
+    debugLog('Break started', { 
+        duration: breakDuration,
+        timerClass: timerDisplay.className
+    }, 'timer');
 }
 
 function skipBreak() {
+    debugLog('Skipping break', null, 'timer');
+    const breakDialog = document.getElementById('breakDialog');
     breakDialog.classList.add('hidden');
+    
+    isInBreak = false;
     resetTimer();
+    
+    debugLog('Break skipped, timer reset', null, 'timer');
 }
-
-// Event listeners - remove the redundant timer button listeners
-startButton.addEventListener('click', startMonitoring);
-stopButton.addEventListener('click', stopMonitoring);
-
-submitDistractionButton.addEventListener('click', () => {
-    const reason = distractionReasonInput.value;
-    console.log('Distraction reason:', reason);
-    distractionReasonInput.value = '';
-    distractionDialog.classList.add('hidden');
-    clearTimeout(distractionTimeout);
-    totalDistractedTime += Date.now() - distractionStartTime;
-    updateStatus(true);
-});
-
-document.querySelector('.close-button').addEventListener('click', () => {
-    document.getElementById('distractionDialog').classList.add('hidden');
-    clearTimeout(distractionTimeout);
-    totalDistractedTime += Date.now() - distractionStartTime;
-    updateStatus(true);
-});
 
 // Use requestAnimationFrame for smoother updates
 function updatePointsProgressIndicator() {
@@ -1101,6 +1341,13 @@ async function checkFace() {
     if (!isMonitoring) return;
     
     try {
+        // Safety check: make sure model is available
+        if (!model) {
+            debugLog('Model not available for checkFace', null, 'timer');
+            stopMonitoring(); // Stop monitoring if model isn't available
+            return;
+        }
+        
         // Reduce prediction frequency on mobile
         const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
         if (isMobile && Math.random() > 0.7) {
@@ -1169,47 +1416,23 @@ async function checkFace() {
     } catch (error) {
         console.error('Error in face detection:', error);
         elements.status.textContent = 'Face detection error occurred';
+        
+        // Stop monitoring if there are persistent errors
+        if (error.message && (
+            error.message.includes("Cannot read properties of null") || 
+            error.message.includes("Cannot read property") ||
+            error.message.includes("is not defined")
+        )) {
+            debugLog('Critical error in face detection, stopping monitoring', error, 'timer');
+            stopMonitoring();
+            showNotification('Face detection error. Monitoring stopped.', 'error');
+        }
     }
 }
 
 // Set audio volumes
 chimeSound.volume = 0.4; // 40% volume
 timerCompleteSound.volume = 0.5; // 50% volume
-
-// Make sure the pauseTimerButton works with the new layout
-document.addEventListener('DOMContentLoaded', function() {
-    // Find both pauseTimerButton elements (the original and the compact one)
-    const pauseButtons = document.querySelectorAll('#pauseTimerButton');
-    
-    // Add the event listener to all pause buttons
-    pauseButtons.forEach(button => {
-        button.addEventListener('click', () => {
-    if (isTimerRunning) {
-        pauseTimer();
-    } else {
-        resumeTimer();
-    }
-            
-            // Update all pause buttons
-            pauseButtons.forEach(btn => {
-                btn.textContent = isTimerRunning ? 'Pause' : 'Resume';
-                btn.disabled = !isMonitoring;
-            });
-        });
-    });
-    
-    // Find all resetTimerButton elements
-    const resetButtons = document.querySelectorAll('#resetTimerButton');
-    
-    // Add the event listener to all reset buttons
-    resetButtons.forEach(button => {
-        button.addEventListener('click', resetTimer);
-    });
-    
-    // Add listeners for break buttons
-    document.getElementById('startBreakButton').addEventListener('click', startBreak);
-    document.getElementById('skipBreakButton').addEventListener('click', skipBreak);
-});
 
 // Function to manually force the camera permission prompt
 function forceRequestCameraPermission() {
@@ -1330,7 +1553,7 @@ async function init() {
                     
                     // Try to setup the webcam again
                     debugLog('User clicked permission button, trying init() again');
-init();
+                    init();
                 };
                 
                 loadingElement.appendChild(permissionButton);
@@ -1358,17 +1581,26 @@ init();
         
         // Initialize status and UI elements
         const statusElement = document.getElementById('status');
-        const startButton = document.getElementById('startButton');
+        const mainActionBtn = document.getElementById('mainActionButton');
         
-        statusElement.textContent = 'Ready to start!';
-        startButton.disabled = false;
+        if (statusElement) {
+            statusElement.textContent = 'Ready to start!';
+        }
+        
+        if (mainActionBtn) {
+            // No need to disable/enable, the button should be enabled by default
+            mainActionBtn.textContent = 'Start Studying';
+            mainActionBtn.classList.remove('active');
+        }
         
         // Draw initial face
         debugLog('Drawing initial face');
         drawFace();
         
         // Initialize timer display
-        updateTimerDisplay();
+        const initialMinutes = workDuration || 25; // Default to 25 minutes if workDuration is not set
+        debugLog('Initializing timer display with minutes:', { initialMinutes }, 'timer');
+        updateTimerDisplay(initialMinutes * 60);
         
         // Initialize points progress indicator
         updatePointsProgressIndicator();
@@ -1413,4 +1645,177 @@ init();
             debugLog('Retry button added due to initialization error');
         }
     }
+}
+
+// Fix the mainActionButton handler to properly control the timer
+document.addEventListener('DOMContentLoaded', function() {
+    debugLog('Setting up timer controls', null, 'timer');
+    
+    // Add main action button handler
+    const mainActionButton = document.getElementById('mainActionButton');
+    if (mainActionButton) {
+        mainActionButton.addEventListener('click', async function() {
+            debugLog('Main action button clicked', { 
+                isTimerRunning, 
+                isMonitoring, 
+                buttonText: this.textContent,
+                timerRemainingTime
+            }, 'timer');
+            
+            try {
+                if (!isMonitoring) {
+                    // If not monitoring, start monitoring which also starts the timer
+                    debugLog('Starting monitoring and timer', null, 'timer');
+                    await startMonitoring();
+                    
+                    // Double check that timer is running
+                    if (!isTimerRunning) {
+                        debugLog('Timer did not start properly, forcing timer start', null, 'timer');
+                        startTimer();
+                    }
+                } else {
+                    // If monitoring, toggle timer state
+                    if (isTimerRunning) {
+                        debugLog('Pausing timer', null, 'timer');
+                        pauseTimer();
+                    } else {
+                        debugLog('Resuming/starting timer', { timerRemainingTime }, 'timer');
+                        if (timerRemainingTime > 0) {
+                            resumeTimer();
+                        } else {
+                            startTimer();
+                        }
+                    }
+                }
+            } catch (error) {
+                console.error('Error in main action button handler:', error);
+                debugLog('Error in main action button handler:', error, 'timer');
+                
+                // Reset states to a clean slate
+                isMonitoring = false;
+                isTimerRunning = false;
+                mainActionButton.textContent = 'Start Studying';
+                mainActionButton.classList.remove('active');
+                resetButton.disabled = false;
+                
+                showNotification('An error occurred. Please try again.', 'error');
+            }
+        });
+    } else {
+        debugLog('Main action button not found', null, 'timer');
+    }
+    
+    // Add reset button handler
+    const resetButton = document.getElementById('resetButton');
+    if (resetButton) {
+        resetButton.addEventListener('click', function() {
+            debugLog('Reset button clicked, calling resetTimer function', null, 'timer');
+            resetTimer();
+        });
+        debugLog('Added click handler to resetButton', null, 'timer');
+    } else {
+        debugLog('Reset button not found in the DOM', null, 'timer');
+    }
+    
+    // Initialize timer display with default value
+    const timerDisplay = document.getElementById('timerDisplay');
+    if (timerDisplay) {
+        updateTimerDisplay(workDuration * 60);
+        debugLog('Initialized timer display with default value', { workDuration }, 'timer');
+    }
+    
+    // Add event listener to work duration input to update timer display
+    const workDurationInput = document.getElementById('workDuration');
+    if (workDurationInput) {
+        workDurationInput.addEventListener('change', function() {
+            if (!isTimerRunning) {
+                workDuration = parseInt(this.value, 10) || 25; // Default to 25 if parsing fails
+                updateTimerDisplay(workDuration * 60);
+                debugLog('Work duration changed, updated timer display', { newDuration: workDuration }, 'timer');
+            }
+        });
+        debugLog('Added change handler to workDurationInput', null, 'timer');
+    }
+});
+
+// Update status text based on focus state
+function updateStatus(isFocused) {
+    const statusElement = document.getElementById('status');
+    if (!statusElement) return;
+    
+    if (isFocused) {
+        statusElement.textContent = 'Focused! Keep it up!';
+        statusElement.className = 'focused';
+    } else {
+        statusElement.textContent = 'Distracted! Look at the screen';
+        statusElement.className = 'distracted';
+    }
+}
+
+// Log app initialization
+debugLog('Script loaded, waiting for DOMContentLoaded event');
+
+// Handle distraction events
+function handleDistraction() {
+    if (!isMonitoring) return;
+    
+    // Play chime sound to alert the user
+    if (chimeSound) {
+        chimeSound.currentTime = 0;
+        chimeSound.play().catch(e => console.log('Sound play error:', e));
+    }
+    
+    // Update UI to show distraction
+    if (document.getElementById('status')) {
+        document.getElementById('status').className = 'distracted';
+    }
+    
+    // Update face to show distraction
+    drawFace(false);
+    
+    // Reset continuous focus time
+    continuousFocusStartTime = Date.now();
+    
+    // Track distraction time
+    if (distractionStartTime === 0) {
+        distractionStartTime = Date.now();
+    }
+    
+    // Add to total distracted time
+    if (distractionStartTime > 0) {
+        totalDistractedTime += (Date.now() - distractionStartTime);
+        distractionStartTime = 0;
+    }
+}
+
+// Create milestone indicators for UI
+function createMilestoneIndicators() {
+    // Skip if we've already created them or if the container doesn't exist
+    if (document.querySelector('.milestone-markers') && 
+        document.querySelector('.milestone-markers').children.length > 0) {
+        return;
+    }
+    
+    const container = document.querySelector('.milestone-markers');
+    if (!container) return;
+    
+    // Remove any existing indicators
+    container.innerHTML = '';
+    
+    // Create milestone indicators based on MILESTONES array
+    MILESTONES.forEach(milestone => {
+        const marker = document.createElement('div');
+        marker.className = 'milestone-marker';
+        marker.id = `milestone-${milestone.duration}`;
+        marker.title = `${milestone.duration} min: +${milestone.points} points`;
+        marker.textContent = `${milestone.duration}m`;
+        
+        // Position along the progress bar based on duration
+        // Assuming the longest milestone duration is our max
+        const maxDuration = MILESTONES[MILESTONES.length - 1].duration;
+        const position = (milestone.duration / maxDuration) * 100;
+        marker.style.left = `${position}%`;
+        
+        container.appendChild(marker);
+    });
 } 
