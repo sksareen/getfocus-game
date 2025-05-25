@@ -3,19 +3,54 @@ let webcam;
 let isMonitoring = false;
 let lastFaceDetectedTime = Date.now();
 let lastBuzzTime = 0;
+let lastDistractionCountTime = 0;
 const DISTRACTION_THRESHOLD = 1000; // 1 second before considering user away
 const BUZZ_COOLDOWN = 1000; // Minimum 1 second between buzzes
 let checkFaceInterval;
 let lastFacePosition = { x: 120, y: 120 };
 let isSmiling = false;
 
+// Session tracking variables
+let sessionGoalMinutes = 25; // Default Pomodoro
+let sessionStartTime = null;
+let sessionElapsedTime = 0;
+let sessionPaused = false;
+let focusStreak = 0;
+let maxFocusStreak = 0;
+let smileCount = 0;
+let distractionCount = 0;
+let focusQuality = 100; // Percentage
+let qualityHistory = [];
+let sessionTimer = null;
+
 // DOM elements
 const webcamElement = document.getElementById('webcam');
 const statusElement = document.getElementById('status');
 const mainActionButton = document.getElementById('mainActionButton');
 const resetButton = document.getElementById('resetButton');
+const completeButton = document.getElementById('completeButton');
 const faceCanvas = document.getElementById('faceCanvas');
 const ctx = faceCanvas.getContext('2d');
+
+// Preview elements
+const previewWebcamElement = document.getElementById('previewWebcam');
+const previewFaceCanvas = document.getElementById('previewFaceCanvas');
+const previewCtx = previewFaceCanvas.getContext('2d');
+const previewStatus = document.getElementById('previewStatus');
+
+// New DOM elements for habit features
+const goalSettingDiv = document.getElementById('goalSetting');
+const mainInterface = document.getElementById('mainInterface');
+const completionCelebration = document.getElementById('completionCelebration');
+const progressTime = document.getElementById('progressTime');
+const progressGoal = document.getElementById('progressGoal');
+const progressBar = document.querySelector('.progress-bar');
+const focusStreakElement = document.getElementById('focusStreak');
+const smileCountElement = document.getElementById('smileCount');
+const distractionCountElement = document.getElementById('distractionCount');
+const qualityFill = document.getElementById('qualityFill');
+const qualityText = document.getElementById('qualityText');
+
 // Audio context for generating buzzing sound
 let audioContext;
 let isAudioInitialized = false;
@@ -23,6 +58,8 @@ let isAudioInitialized = false;
 // Set canvas size to match CSS
 faceCanvas.width = 240;
 faceCanvas.height = 240;
+previewFaceCanvas.width = 120;
+previewFaceCanvas.height = 120;
 
 // Face tracking sensitivity
 const FACE_SENSITIVITY = 6; // Higher sensitivity for more responsive movement
@@ -60,31 +97,196 @@ function playBuzzSound() {
     }
     
     try {
-        // Create oscillator for the buzz
-        const oscillator = audioContext.createOscillator();
-        const gainNode = audioContext.createGain();
+        // Create low frequency oscillator for the buzz
+        const lowOsc = audioContext.createOscillator();
+        const lowGain = audioContext.createGain();
+        
+        // Create high frequency oscillator for clarity
+        const highOsc = audioContext.createOscillator();
+        const highGain = audioContext.createGain();
+        
+        // Create master gain
+        const masterGain = audioContext.createGain();
         
         // Connect nodes
-        oscillator.connect(gainNode);
-        gainNode.connect(audioContext.destination);
+        lowOsc.connect(lowGain);
+        highOsc.connect(highGain);
+        lowGain.connect(masterGain);
+        highGain.connect(masterGain);
+        masterGain.connect(audioContext.destination);
         
-        // Configure the buzz sound
-        oscillator.frequency.setValueAtTime(200, audioContext.currentTime); // Low frequency buzz
-        oscillator.frequency.exponentialRampToValueAtTime(150, audioContext.currentTime + 0.1);
+        // Configure the low buzz sound
+        lowOsc.frequency.setValueAtTime(200, audioContext.currentTime);
+        lowOsc.frequency.exponentialRampToValueAtTime(150, audioContext.currentTime + 0.1);
         
-        // Gentle volume envelope
-        gainNode.gain.setValueAtTime(0, audioContext.currentTime);
-        gainNode.gain.linearRampToValueAtTime(0.1, audioContext.currentTime + 0.05);
-        gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.3);
+        // Configure the high frequency component for clarity
+        highOsc.frequency.setValueAtTime(800, audioContext.currentTime);
+        highOsc.frequency.exponentialRampToValueAtTime(600, audioContext.currentTime + 0.1);
+        
+        // Set volume levels
+        lowGain.gain.setValueAtTime(0.15, audioContext.currentTime); // Main buzz
+        highGain.gain.setValueAtTime(0.08, audioContext.currentTime); // Higher register accent
+        
+        // Master volume envelope
+        masterGain.gain.setValueAtTime(0, audioContext.currentTime);
+        masterGain.gain.linearRampToValueAtTime(1, audioContext.currentTime + 0.05);
+        masterGain.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.3);
         
         // Play for 300ms
-        oscillator.start(audioContext.currentTime);
-        oscillator.stop(audioContext.currentTime + 0.3);
+        lowOsc.start(audioContext.currentTime);
+        highOsc.start(audioContext.currentTime);
+        lowOsc.stop(audioContext.currentTime + 0.3);
+        highOsc.stop(audioContext.currentTime + 0.3);
         
-        debugLog('Played buzz sound');
+        debugLog('Played enhanced buzz sound');
     } catch (error) {
         console.error('Error playing buzz sound:', error);
     }
+}
+
+// Create a positive reinforcement sound for achievements
+function playSuccessSound() {
+    if (!audioContext || audioContext.state === 'suspended') {
+        audioContext?.resume();
+        return;
+    }
+    
+    try {
+        // Create multiple oscillators for rich harmonic sound
+        const osc1 = audioContext.createOscillator();
+        const osc2 = audioContext.createOscillator();
+        const osc3 = audioContext.createOscillator();
+        const gain1 = audioContext.createGain();
+        const gain2 = audioContext.createGain();
+        const gain3 = audioContext.createGain();
+        const masterGain = audioContext.createGain();
+        
+        // Connect nodes
+        osc1.connect(gain1);
+        osc2.connect(gain2);
+        osc3.connect(gain3);
+        gain1.connect(masterGain);
+        gain2.connect(masterGain);
+        gain3.connect(masterGain);
+        masterGain.connect(audioContext.destination);
+        
+        // Pleasant ascending chord progression
+        // First note: C5 (523 Hz)
+        osc1.frequency.setValueAtTime(523, audioContext.currentTime);
+        osc1.frequency.setValueAtTime(659, audioContext.currentTime + 0.1); // E5
+        osc1.frequency.setValueAtTime(784, audioContext.currentTime + 0.2); // G5
+        
+        // Higher harmony: E5 -> G5 -> C6
+        osc2.frequency.setValueAtTime(659, audioContext.currentTime);
+        osc2.frequency.setValueAtTime(784, audioContext.currentTime + 0.1);
+        osc2.frequency.setValueAtTime(1047, audioContext.currentTime + 0.2); // C6
+        
+        // Even higher sparkle: G5 -> C6 -> E6
+        osc3.frequency.setValueAtTime(784, audioContext.currentTime);
+        osc3.frequency.setValueAtTime(1047, audioContext.currentTime + 0.1);
+        osc3.frequency.setValueAtTime(1319, audioContext.currentTime + 0.2); // E6
+        
+        // Set individual volumes
+        gain1.gain.setValueAtTime(0.12, audioContext.currentTime); // Main melody
+        gain2.gain.setValueAtTime(0.08, audioContext.currentTime); // Harmony
+        gain3.gain.setValueAtTime(0.05, audioContext.currentTime); // High sparkle
+        
+        // Master volume envelope
+        masterGain.gain.setValueAtTime(0, audioContext.currentTime);
+        masterGain.gain.linearRampToValueAtTime(1, audioContext.currentTime + 0.05);
+        masterGain.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.5);
+        
+        // Play the chord progression
+        osc1.start(audioContext.currentTime);
+        osc2.start(audioContext.currentTime);
+        osc3.start(audioContext.currentTime);
+        osc1.stop(audioContext.currentTime + 0.5);
+        osc2.stop(audioContext.currentTime + 0.5);
+        osc3.stop(audioContext.currentTime + 0.5);
+        
+        debugLog('Played enhanced success sound');
+    } catch (error) {
+        console.error('Error playing success sound:', error);
+    }
+}
+
+// Format time for display
+function formatTime(seconds) {
+    const mins = Math.floor(seconds / 60);
+    const secs = seconds % 60;
+    return `${mins}:${secs.toString().padStart(2, '0')}`;
+}
+
+// Update progress ring
+function updateProgressRing() {
+    if (!sessionStartTime) return;
+    
+    const elapsed = sessionElapsedTime;
+    const total = sessionGoalMinutes * 60;
+    const progress = Math.min(elapsed / total, 1);
+    
+    // Update progress bar (circumference = 2 * π * r = 2 * π * 54 ≈ 339.292)
+    const circumference = 339.292;
+    const offset = circumference - (progress * circumference);
+    progressBar.style.strokeDashoffset = offset;
+    
+    // Update time display
+    progressTime.textContent = formatTime(elapsed);
+    progressGoal.textContent = `/ ${formatTime(total)}`;
+    
+    // Change color based on progress
+    if (progress >= 1) {
+        progressBar.style.stroke = '#4CAF50'; // Success green
+    } else if (progress >= 0.75) {
+        progressBar.style.stroke = '#8BC34A'; // Light green
+    } else if (progress >= 0.5) {
+        progressBar.style.stroke = '#FFC107'; // Warning yellow
+    } else {
+        progressBar.style.stroke = '#2196F3'; // Primary blue
+    }
+}
+
+// Update focus quality based on recent performance
+function updateFocusQuality() {
+    // Calculate quality based on recent focus history
+    const recentHistory = qualityHistory.slice(-10); // Last 10 measurements
+    if (recentHistory.length === 0) return;
+    
+    const averageQuality = recentHistory.reduce((sum, q) => sum + q, 0) / recentHistory.length;
+    focusQuality = Math.round(averageQuality);
+    
+    // Update quality bar
+    qualityFill.style.width = `${focusQuality}%`;
+    
+    // Update quality text and color
+    let qualityLabel, qualityClass;
+    if (focusQuality >= 90) {
+        qualityLabel = 'Excellent';
+        qualityClass = 'quality-excellent';
+        qualityFill.style.background = 'linear-gradient(90deg, #2E7D32, #4CAF50)';
+    } else if (focusQuality >= 75) {
+        qualityLabel = 'Good';
+        qualityClass = 'quality-good';
+        qualityFill.style.background = 'linear-gradient(90deg, #689F38, #8BC34A)';
+    } else if (focusQuality >= 60) {
+        qualityLabel = 'Fair';
+        qualityClass = 'quality-fair';
+        qualityFill.style.background = 'linear-gradient(90deg, #F57C00, #FFC107)';
+    } else {
+        qualityLabel = 'Poor';
+        qualityClass = 'quality-poor';
+        qualityFill.style.background = 'linear-gradient(90deg, #D32F2F, #FF5722)';
+    }
+    
+    qualityText.textContent = qualityLabel;
+    qualityText.className = qualityClass;
+}
+
+// Update session statistics display
+function updateSessionStats() {
+    focusStreakElement.textContent = focusStreak;
+    smileCountElement.textContent = smileCount;
+    distractionCountElement.textContent = distractionCount;
 }
 
 // Initialize the app
@@ -101,6 +303,7 @@ async function init() {
         // Setup webcam
         try {
             await setupWebcam();
+            await setupPreviewWebcam();
             debugLog('Webcam setup successful');
         } catch (error) {
             console.error('Webcam setup failed:', error);
@@ -116,24 +319,19 @@ async function init() {
         model = await blazeface.load();
         debugLog('BlazeFace model loaded successfully');
         
-        // Hide loading screen and show main content
-        debugLog('Hiding loading screen and showing main content');
+        // Hide loading screen and show goal setting
+        debugLog('Hiding loading screen and showing goal setting');
         document.getElementById('loading').style.display = 'none';
         document.getElementById('appContent').classList.remove('hidden');
         
-        // Initialize status and UI elements
-        statusElement.textContent = 'Ready to start!';
-        mainActionButton.textContent = 'Start Monitoring';
-        mainActionButton.classList.remove('active');
-        
-        // Draw initial face
-        drawFace();
-        
-        // Add floating animation to the face
-        faceCanvas.classList.add('floating');
-        
         // Initialize audio context (will be activated on first user interaction)
         initializeAudio();
+        
+        // Setup goal setting event listeners
+        setupGoalSetting();
+        
+        // Start preview face detection
+        startPreviewDetection();
         
         debugLog('Initialization completed successfully');
         
@@ -141,6 +339,72 @@ async function init() {
         console.error('Initialization failed:', error);
         document.querySelector('#loading h2').textContent = 'Failed to load. Please refresh the page.';
     }
+}
+
+// Setup goal setting interface
+function setupGoalSetting() {
+    const goalButtons = document.querySelectorAll('.goal-btn');
+    const customMinutes = document.getElementById('customMinutes');
+    const customGoalBtn = document.getElementById('customGoalBtn');
+    
+    // Handle preset goal buttons
+    goalButtons.forEach(btn => {
+        btn.addEventListener('click', () => {
+            // Remove selected class from all buttons
+            goalButtons.forEach(b => b.classList.remove('selected'));
+            // Add selected class to clicked button
+            btn.classList.add('selected');
+            
+            const minutes = parseInt(btn.dataset.minutes);
+            setSessionGoal(minutes);
+        });
+    });
+    
+    // Handle custom goal
+    customGoalBtn.addEventListener('click', () => {
+        const minutes = parseInt(customMinutes.value);
+        if (minutes && minutes >= 5 && minutes <= 180) {
+            goalButtons.forEach(b => b.classList.remove('selected'));
+            setSessionGoal(minutes);
+        } else {
+            alert('Please enter a valid time between 5 and 180 minutes.');
+        }
+    });
+    
+    // Allow Enter key for custom goal
+    customMinutes.addEventListener('keypress', (e) => {
+        if (e.key === 'Enter') {
+            customGoalBtn.click();
+        }
+    });
+}
+
+// Set session goal and transition to main interface
+function setSessionGoal(minutes) {
+    sessionGoalMinutes = minutes;
+    
+    // Stop preview detection
+    stopPreviewDetection();
+    
+    // Update progress goal display
+    progressGoal.textContent = `/ ${formatTime(minutes * 60)}`;
+    
+    // Hide goal setting and show main interface
+    goalSettingDiv.classList.add('hidden');
+    mainInterface.classList.remove('hidden');
+    
+    // Initialize status and UI elements
+    statusElement.textContent = 'Ready to start your focus session!';
+    mainActionButton.textContent = 'Start Session';
+    mainActionButton.classList.remove('active');
+    
+    // Draw initial face
+    drawFace();
+    
+    // Add floating animation to the face
+    faceCanvas.classList.add('floating');
+    
+    debugLog(`Session goal set to ${minutes} minutes`);
 }
 
 // Setup webcam
@@ -171,6 +435,175 @@ async function setupWebcam() {
     }
 }
 
+// Setup preview webcam (same stream)
+async function setupPreviewWebcam() {
+    try {
+        // Use the same stream as the main webcam
+        const stream = webcamElement.srcObject;
+        previewWebcamElement.srcObject = stream;
+        
+        return new Promise((resolve) => {
+            previewWebcamElement.onloadedmetadata = () => {
+                previewWebcamElement.play();
+                debugLog('Preview webcam stream started');
+                resolve();
+            };
+        });
+    } catch (error) {
+        console.error('Error setting up preview webcam:', error);
+        throw error;
+    }
+}
+
+// Preview face detection
+let previewDetectionInterval;
+
+async function checkPreviewFace() {
+    if (!model) return;
+    
+    try {
+        const predictions = await model.estimateFaces(previewWebcamElement, false);
+        
+        if (predictions.length > 0) {
+            const face = predictions[0];
+            const centerX = (face.topLeft[0] + face.bottomRight[0]) / 2;
+            const centerY = (face.topLeft[1] + face.bottomRight[1]) / 2;
+            
+            const currentlySmiling = detectSmile(predictions);
+            
+            drawPreviewFace(true, centerX, centerY, currentlySmiling);
+            previewStatus.textContent = currentlySmiling ? 'Ready! 😊' : 'Face detected ✓';
+            previewStatus.className = 'ready';
+        } else {
+            drawPreviewFace(false);
+            previewStatus.textContent = 'Look at camera';
+            previewStatus.className = '';
+        }
+    } catch (error) {
+        console.error('Error in preview face detection:', error);
+        previewStatus.textContent = 'Detection error';
+    }
+}
+
+function startPreviewDetection() {
+    // Draw initial preview face
+    drawPreviewFace();
+    previewFaceCanvas.classList.add('floating');
+    
+    // Start preview detection
+    previewDetectionInterval = setInterval(checkPreviewFace, 200);
+    
+    debugLog('Preview detection started');
+}
+
+function stopPreviewDetection() {
+    if (previewDetectionInterval) {
+        clearInterval(previewDetectionInterval);
+        previewDetectionInterval = null;
+    }
+    debugLog('Preview detection stopped');
+}
+
+// Draw preview face (smaller version for goal setting)
+function drawPreviewFace(isFocused = true, faceX = null, faceY = null, isSmiling = false) {
+    previewCtx.clearRect(0, 0, previewFaceCanvas.width, previewFaceCanvas.height);
+    
+    const centerX = 60; 
+    const centerY = 60;
+    
+    let offsetX = 0;
+    let offsetY = 0;
+    
+    if (faceX !== null && faceY !== null) {
+        // Calculate head movement offset with increased sensitivity
+        offsetX = Math.max(-15, Math.min(15, (faceX - 320) / (320 / FACE_SENSITIVITY)));
+        offsetY = Math.max(-15, Math.min(15, (faceY - 240) / (240 / FACE_SENSITIVITY)));
+    }
+    
+    const adjustedX = centerX + offsetX;
+    const adjustedY = centerY + offsetY;
+    
+    // Draw face background with gradient
+    const faceGradient = previewCtx.createRadialGradient(
+        adjustedX, adjustedY - 2, 2,
+        adjustedX, adjustedY, 25
+    );
+    faceGradient.addColorStop(0, '#FFEDD6');
+    faceGradient.addColorStop(1, '#FFCD90');
+    
+    previewCtx.fillStyle = faceGradient;
+    previewCtx.beginPath();
+    previewCtx.arc(adjustedX, adjustedY, 25, 0, Math.PI * 2);
+    previewCtx.fill();
+    
+    // Add highlight for 3D effect
+    previewCtx.fillStyle = 'rgba(255, 255, 255, 0.3)';
+    previewCtx.beginPath();
+    previewCtx.arc(adjustedX - 8, adjustedY - 8, 12, 0, Math.PI * 2);
+    previewCtx.fill();
+    
+    // Draw eyes
+    const leftEyeX = adjustedX - 8;
+    const rightEyeX = adjustedX + 8;
+    const eyeY = adjustedY - 5;
+    
+    if (isFocused) {
+        // Regular eyes with pupils
+        previewCtx.fillStyle = 'white';
+        previewCtx.beginPath();
+        previewCtx.arc(leftEyeX, eyeY, 3, 0, Math.PI * 2);
+        previewCtx.fill();
+        
+        previewCtx.beginPath();
+        previewCtx.arc(rightEyeX, eyeY, 3, 0, Math.PI * 2);
+        previewCtx.fill();
+        
+        // Pupils
+        previewCtx.fillStyle = '#333';
+        previewCtx.beginPath();
+        previewCtx.arc(leftEyeX + offsetX * 0.1, eyeY + offsetY * 0.1, 2, 0, Math.PI * 2);
+        previewCtx.fill();
+        
+        previewCtx.beginPath();
+        previewCtx.arc(rightEyeX + offsetX * 0.1, eyeY + offsetY * 0.1, 2, 0, Math.PI * 2);
+        previewCtx.fill();
+    } else {
+        // Distracted eyes
+        previewCtx.fillStyle = '#333';
+        previewCtx.beginPath();
+        previewCtx.ellipse(leftEyeX, eyeY, 3, 1, Math.PI/6, 0, Math.PI * 2);
+        previewCtx.fill();
+        
+        previewCtx.beginPath();
+        previewCtx.ellipse(rightEyeX, eyeY, 3, 1, -Math.PI/6, 0, Math.PI * 2);
+        previewCtx.fill();
+    }
+    
+    // Draw mouth
+    previewCtx.strokeStyle = '#333';
+    previewCtx.lineWidth = 2;
+    previewCtx.lineCap = 'round';
+    
+    if (isFocused) {
+        if (isSmiling) {
+            // Happy smile
+            previewCtx.beginPath();
+            previewCtx.arc(adjustedX, adjustedY + 5, 12, 0.2, Math.PI - 0.2);
+            previewCtx.stroke();
+        } else {
+            // Content smile
+            previewCtx.beginPath();
+            previewCtx.arc(adjustedX, adjustedY + 7, 8, 0.3, Math.PI - 0.3);
+            previewCtx.stroke();
+        }
+    } else {
+        // Sad mouth
+        previewCtx.beginPath();
+        previewCtx.arc(adjustedX, adjustedY + 12, 8, Math.PI + 0.3, 2 * Math.PI - 0.3);
+        previewCtx.stroke();
+    }
+}
+
 // Draw the 2D face with head tracking and smile detection
 function drawFace(isFocused = true, faceX = null, faceY = null, isSmiling = false) {
     // Throttle rendering for performance
@@ -198,7 +631,7 @@ function drawFace(isFocused = true, faceX = null, faceY = null, isSmiling = fals
     // Draw face background with gradient
     const faceGradient = ctx.createRadialGradient(
         adjustedX, adjustedY - 5, 5,
-        adjustedX, adjustedY, 45
+        adjustedX, adjustedY, 55
     );
     faceGradient.addColorStop(0, '#FFEDD6');
     faceGradient.addColorStop(1, '#FFCD90');
@@ -406,7 +839,7 @@ function detectSmile(predictions) {
     }
 }
 
-// Enhanced face checking with smile detection
+// Enhanced face checking with smile detection and habit tracking
 async function checkFace() {
     if (!isMonitoring || !model) return;
     
@@ -428,7 +861,31 @@ async function checkFace() {
             
             // Detect smile
             const currentlySmiling = detectSmile(predictions);
+            const wasSmiling = isSmiling;
             isSmiling = currentlySmiling;
+            
+            // Track smile count for positive reinforcement
+            if (currentlySmiling && !wasSmiling) {
+                smileCount++;
+                updateSessionStats();
+                
+                // Play success sound for smiles (positive reinforcement)
+                if (smileCount % 5 === 0) { // Every 5th smile
+                    playSuccessSound();
+                }
+            }
+            
+            // Update focus streak
+            focusStreak++;
+            if (focusStreak > maxFocusStreak) {
+                maxFocusStreak = focusStreak;
+            }
+            
+            // Add to quality history (focused = 100%)
+            qualityHistory.push(100);
+            if (qualityHistory.length > 50) {
+                qualityHistory.shift(); // Keep only recent history
+            }
             
             // Draw the face with current position and smile state
             drawFace(true, centerX, centerY, isSmiling);
@@ -446,6 +903,23 @@ async function checkFace() {
             const timeSinceLastFace = Date.now() - lastFaceDetectedTime;
             
             if (timeSinceLastFace > DISTRACTION_THRESHOLD) {
+                // Reset focus streak
+                focusStreak = 0;
+                
+                // Increment distraction count once per second when distracted
+                const now = Date.now();
+                if (now - lastDistractionCountTime >= 1000) {
+                    distractionCount++;
+                    lastDistractionCountTime = now;
+                    updateSessionStats();
+                }
+                
+                // Add to quality history (distracted = 0%)
+                qualityHistory.push(0);
+                if (qualityHistory.length > 50) {
+                    qualityHistory.shift();
+                }
+                
                 drawFace(false);
                 statusElement.className = 'distracted';
                 statusElement.textContent = 'Please look at the camera';
@@ -456,6 +930,11 @@ async function checkFace() {
                 statusElement.textContent = 'Focused and tracking';
             }
         }
+        
+        // Update focus quality and session stats
+        updateFocusQuality();
+        updateSessionStats();
+        
     } catch (error) {
         console.error('Error in face detection:', error);
         statusElement.textContent = 'Face detection error occurred';
@@ -479,6 +958,19 @@ function handleDistraction() {
     }
 }
 
+// Update session timer
+function updateSessionTimer() {
+    if (!sessionStartTime || sessionPaused) return;
+    
+    sessionElapsedTime = Math.floor((Date.now() - sessionStartTime) / 1000);
+    updateProgressRing();
+    
+    // Check if session goal is reached
+    if (sessionElapsedTime >= sessionGoalMinutes * 60) {
+        completeSession(true); // Auto-complete when goal reached
+    }
+}
+
 // Start monitoring
 async function startMonitoring() {
     if (isMonitoring) return;
@@ -489,15 +981,39 @@ async function startMonitoring() {
             return;
         }
         
+        // Activate audio context on first user interaction
+        if (audioContext && audioContext.state === 'suspended') {
+            audioContext.resume();
+        }
+        
         isMonitoring = true;
-        mainActionButton.textContent = 'Stop Monitoring';
+        sessionStartTime = Date.now();
+        sessionPaused = false;
+        
+        // Reset session stats
+        focusStreak = 0;
+        maxFocusStreak = 0;
+        smileCount = 0;
+        distractionCount = 0;
+        focusQuality = 100;
+        qualityHistory = [];
+        sessionElapsedTime = 0;
+        
+        // Update UI
+        mainActionButton.textContent = 'Pause Session';
         mainActionButton.classList.add('active');
         resetButton.disabled = false;
-        
+        completeButton.classList.remove('hidden');
         statusElement.textContent = 'Monitoring your focus...';
         
-        // Start face checking
+        // Start timers
         checkFaceInterval = setInterval(checkFace, CHECK_INTERVAL);
+        sessionTimer = setInterval(updateSessionTimer, 1000);
+        
+        // Update initial displays
+        updateSessionStats();
+        updateFocusQuality();
+        updateProgressRing();
         
         debugLog('Monitoring started');
         
@@ -507,12 +1023,44 @@ async function startMonitoring() {
     }
 }
 
+// Pause/Resume monitoring
+function pauseResumeMonitoring() {
+    if (!isMonitoring) {
+        startMonitoring();
+        return;
+    }
+    
+    if (sessionPaused) {
+        // Resume
+        sessionStartTime = Date.now() - (sessionElapsedTime * 1000);
+        sessionPaused = false;
+        mainActionButton.textContent = 'Pause Session';
+        statusElement.textContent = 'Monitoring resumed...';
+        
+        checkFaceInterval = setInterval(checkFace, CHECK_INTERVAL);
+        sessionTimer = setInterval(updateSessionTimer, 1000);
+        
+        debugLog('Monitoring resumed');
+    } else {
+        // Pause
+        sessionPaused = true;
+        mainActionButton.textContent = 'Resume Session';
+        statusElement.textContent = 'Session paused';
+        
+        clearInterval(checkFaceInterval);
+        clearInterval(sessionTimer);
+        
+        debugLog('Monitoring paused');
+    }
+}
+
 // Stop monitoring
 function stopMonitoring() {
     if (!isMonitoring) return;
     
     try {
         isMonitoring = false;
+        sessionPaused = false;
         
         // Clear intervals
         if (checkFaceInterval) {
@@ -520,11 +1068,17 @@ function stopMonitoring() {
             checkFaceInterval = null;
         }
         
+        if (sessionTimer) {
+            clearInterval(sessionTimer);
+            sessionTimer = null;
+        }
+        
         // Update UI
-        mainActionButton.textContent = 'Start Monitoring';
+        mainActionButton.textContent = 'Start Session';
         mainActionButton.classList.remove('active');
         resetButton.disabled = false;
-        statusElement.textContent = 'Monitoring stopped';
+        completeButton.classList.add('hidden');
+        statusElement.textContent = 'Session stopped';
         statusElement.className = '';
         
         // Reset face animation
@@ -539,6 +1093,53 @@ function stopMonitoring() {
     }
 }
 
+// Complete session with celebration
+function completeSession(autoComplete = false) {
+    stopMonitoring();
+    
+    // Calculate final stats
+    const completedMinutes = Math.floor(sessionElapsedTime / 60);
+    const completedSeconds = sessionElapsedTime % 60;
+    const completedTimeStr = `${completedMinutes}:${completedSeconds.toString().padStart(2, '0')}`;
+    
+    // Update completion celebration
+    document.getElementById('completedTime').textContent = completedTimeStr;
+    document.getElementById('finalQuality').textContent = `${focusQuality}%`;
+    document.getElementById('finalStreak').textContent = maxFocusStreak;
+    
+    // Generate achievement message
+    let achievementMessage = '';
+    if (sessionElapsedTime >= sessionGoalMinutes * 60) {
+        achievementMessage = '🎯 Goal achieved! You completed your full focus session. ';
+    } else if (sessionElapsedTime >= sessionGoalMinutes * 60 * 0.8) {
+        achievementMessage = '🌟 Great effort! You completed most of your session. ';
+    } else {
+        achievementMessage = '👍 Good start! Every minute of focus counts. ';
+    }
+    
+    if (focusQuality >= 90) {
+        achievementMessage += 'Your focus quality was excellent!';
+    } else if (focusQuality >= 75) {
+        achievementMessage += 'Your focus quality was really good!';
+    } else {
+        achievementMessage += 'Keep practicing to improve your focus quality.';
+    }
+    
+    if (smileCount >= 10) {
+        achievementMessage += ' You had a positive attitude throughout! 😊';
+    }
+    
+    document.getElementById('achievementMessage').textContent = achievementMessage;
+    
+    // Show celebration
+    completionCelebration.classList.remove('hidden');
+    
+    // Play success sound
+    playSuccessSound();
+    
+    debugLog(`Session completed: ${completedTimeStr}, Quality: ${focusQuality}%, Streak: ${maxFocusStreak}`);
+}
+
 // Reset everything
 function resetMonitoring() {
     stopMonitoring();
@@ -546,12 +1147,26 @@ function resetMonitoring() {
     // Reset variables
     lastFaceDetectedTime = Date.now();
     lastBuzzTime = 0;
+    lastDistractionCountTime = 0;
     lastFacePosition = { x: 120, y: 120 };
     isSmiling = false;
+    sessionStartTime = null;
+    sessionElapsedTime = 0;
+    sessionPaused = false;
+    focusStreak = 0;
+    maxFocusStreak = 0;
+    smileCount = 0;
+    distractionCount = 0;
+    focusQuality = 100;
+    qualityHistory = [];
     
     // Reset UI
-    statusElement.textContent = 'Ready to start!';
+    statusElement.textContent = 'Ready to start your focus session!';
     statusElement.className = '';
+    progressTime.textContent = '0:00';
+    updateProgressRing();
+    updateSessionStats();
+    updateFocusQuality();
     
     // Reset face
     drawFace();
@@ -561,21 +1176,49 @@ function resetMonitoring() {
     debugLog('Everything reset');
 }
 
+// Start new session (from completion screen)
+function startNewSession() {
+    completionCelebration.classList.add('hidden');
+    
+    // Show goal setting again
+    mainInterface.classList.add('hidden');
+    goalSettingDiv.classList.remove('hidden');
+    
+    // Reset everything
+    resetMonitoring();
+    
+    // Restart preview detection
+    startPreviewDetection();
+    
+    debugLog('Starting new session');
+}
+
+// Take a break (from completion screen)
+function takeBreak() {
+    completionCelebration.classList.add('hidden');
+    
+    // Reset but stay on main interface
+    resetMonitoring();
+    statusElement.textContent = 'Take a well-deserved break! Start when ready.';
+    
+    debugLog('Taking a break');
+}
+
 // Event listeners
 document.addEventListener('DOMContentLoaded', function() {
     debugLog('DOM loaded, setting up event listeners');
     
-    // Main action button (start/stop)
+    // Main action button (start/pause/resume)
     mainActionButton.addEventListener('click', function() {
         // Activate audio context on first user interaction
         if (audioContext && audioContext.state === 'suspended') {
             audioContext.resume();
         }
         
-        if (isMonitoring) {
-            stopMonitoring();
-        } else {
+        if (!isMonitoring) {
             startMonitoring();
+        } else {
+            pauseResumeMonitoring();
         }
     });
     
@@ -584,13 +1227,22 @@ document.addEventListener('DOMContentLoaded', function() {
         resetMonitoring();
     });
     
+    // Complete button
+    completeButton.addEventListener('click', function() {
+        completeSession(false);
+    });
+    
+    // Completion celebration buttons
+    document.getElementById('newSessionBtn').addEventListener('click', startNewSession);
+    document.getElementById('takeBreakBtn').addEventListener('click', takeBreak);
+    
     // Initialize the app
     init();
 });
 
 // Handle page visibility changes
 document.addEventListener('visibilitychange', () => {
-    if (document.hidden && isMonitoring) {
+    if (document.hidden && isMonitoring && !sessionPaused) {
         // User has switched away, consider this as distraction
         const timeSinceLastFace = Date.now() - lastFaceDetectedTime;
         
