@@ -10,13 +10,19 @@
     <!-- Loading state -->
     <div id="loading" class="loading-state">
         <div class="breathing-circle"></div>
-        <p class="loading-text">Preparing your focus session</p>
+        <p class="loading-text" id="loadingText">Preparing your focus session</p>
     </div>
     
     <!-- Main app -->
     <div id="app" class="app hidden">
         <!-- Single unified view -->
         <main class="focus-view">
+            <!-- Top info bar -->
+            <div class="info-bar">
+                <div class="time-display" id="timeDisplay">25:00</div>
+                <div class="focus-score" id="focusScore">100</div>
+            </div>
+            
             <!-- Focus visualization -->
             <div class="focus-container">
                 <video id="webcam" class="webcam-feed" autoplay playsinline></video>
@@ -27,12 +33,6 @@
                     <circle class="ring-bg" cx="200" cy="200" r="190"></circle>
                     <circle class="ring-progress" cx="200" cy="200" r="190"></circle>
                 </svg>
-                
-                <!-- Center info -->
-                <div class="focus-info">
-                    <div class="time-display" id="timeDisplay">25:00</div>
-                    <div class="focus-score" id="focusScore">100</div>
-                </div>
             </div>
             
             <!-- Minimal controls -->
@@ -40,6 +40,8 @@
                 <button id="actionBtn" class="primary-btn" data-state="ready">
                     <span class="btn-text">Begin Focus</span>
                 </button>
+                
+                <button id="timeBtn" class="time-btn">25 min</button>
                 
                 <!-- Time selector (hidden by default) -->
                 <div id="timeSelector" class="time-selector hidden">
@@ -52,6 +54,9 @@
             
             <!-- Status text -->
             <p id="statusText" class="status-text">Click to set your focus time</p>
+            
+            <!-- Webcam toggle -->
+            <button id="webcamToggle" class="webcam-toggle" title="Toggle webcam visibility">👁</button>
         </main>
         
         <!-- Completion view -->

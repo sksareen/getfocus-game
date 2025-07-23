@@ -104,6 +104,7 @@ body {
     display: flex;
     align-items: center;
     justify-content: center;
+    transition: filter 0.3s ease;
 }
 
 .webcam-feed {
@@ -112,8 +113,9 @@ body {
     height: 100%;
     object-fit: cover;
     border-radius: 50%;
-    opacity: 0.1;
-    filter: blur(10px);
+    opacity: 0.3;
+    filter: blur(2px);
+    z-index: 1;
 }
 
 .focus-canvas {
@@ -122,6 +124,7 @@ body {
     height: 100%;
     border-radius: 50%;
     pointer-events: none;
+    z-index: 2;
 }
 
 /* Progress ring */
@@ -130,6 +133,7 @@ body {
     width: 100%;
     height: 100%;
     transform: rotate(-90deg);
+    z-index: 3;
 }
 
 .ring-bg {
@@ -145,29 +149,37 @@ body {
     stroke-linecap: round;
     stroke-dasharray: 1194;
     stroke-dashoffset: 1194;
-    transition: stroke-dashoffset 0.5s ease;
+    transition: stroke-dashoffset 0.5s ease, stroke 0.3s ease;
 }
 
-/* Focus info */
-.focus-info {
-    position: absolute;
-    text-align: center;
+/* Info bar */
+.info-bar {
     display: flex;
-    flex-direction: column;
-    gap: var(--space-xs);
+    justify-content: space-between;
+    align-items: center;
+    width: 100%;
+    max-width: 400px;
+    padding: var(--space-sm);
+    margin-bottom: var(--space-md);
+    background: rgba(255, 255, 255, 0.05);
+    border-radius: 12px;
+    backdrop-filter: blur(10px);
+    border: 1px solid rgba(255, 255, 255, 0.1);
 }
 
 .time-display {
-    font-size: 3rem;
-    font-weight: 200;
+    font-size: 2rem;
+    font-weight: 300;
     letter-spacing: 0.05em;
     font-family: var(--font-mono);
+    color: var(--text-primary);
 }
 
 .focus-score {
-    font-size: 1.5rem;
+    font-size: 1.25rem;
     color: var(--text-secondary);
     font-weight: 300;
+    text-align: right;
 }
 
 .focus-score::after {
@@ -214,6 +226,23 @@ body {
 
 .primary-btn[data-state="focusing"]:hover {
     background: rgba(74, 144, 226, 0.1);
+}
+
+/* Time button */
+.time-btn {
+    background: none;
+    border: 1px solid var(--text-secondary);
+    color: var(--text-secondary);
+    padding: var(--space-xs) var(--space-sm);
+    font-size: 0.875rem;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    margin-top: var(--space-xs);
+}
+
+.time-btn:hover {
+    border-color: var(--text-primary);
+    color: var(--text-primary);
 }
 
 /* Time selector */
@@ -352,6 +381,39 @@ body {
 @keyframes pulse {
     0%, 100% { opacity: 0; }
     50% { opacity: 0.2; }
+}
+
+/* Webcam toggle */
+.webcam-toggle {
+    position: absolute;
+    bottom: var(--space-md);
+    right: var(--space-md);
+    background: rgba(255, 255, 255, 0.1);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    border-radius: 50%;
+    width: 40px;
+    height: 40px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    font-size: 1.2rem;
+    transition: all 0.2s ease;
+}
+
+.webcam-toggle:hover {
+    background: rgba(255, 255, 255, 0.2);
+    border-color: rgba(255, 255, 255, 0.4);
+}
+
+/* Webcam states */
+.webcam-feed.visible {
+    opacity: 0.8;
+    filter: blur(0);
+}
+
+.webcam-feed.hidden {
+    opacity: 0;
 }
 
 /* Smooth transitions */
