@@ -3,150 +3,66 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>AI Study Buddy</title>
+    <title>Focus</title>
     <link rel="stylesheet" href="styles.css">
 </head>
 <body>
-    <div class="container">
-        <h1>AI Study Buddy</h1>
+    <!-- Loading state -->
+    <div id="loading" class="loading-state">
+        <div class="breathing-circle"></div>
+        <p class="loading-text">Preparing your focus session</p>
+    </div>
+    
+    <!-- Main app -->
+    <div id="app" class="app hidden">
+        <!-- Single unified view -->
+        <main class="focus-view">
+            <!-- Focus visualization -->
+            <div class="focus-container">
+                <video id="webcam" class="webcam-feed" autoplay playsinline></video>
+                <canvas id="focusCanvas" class="focus-canvas"></canvas>
+                
+                <!-- Minimal progress ring -->
+                <svg class="progress-ring" width="400" height="400">
+                    <circle class="ring-bg" cx="200" cy="200" r="190"></circle>
+                    <circle class="ring-progress" cx="200" cy="200" r="190"></circle>
+                </svg>
+                
+                <!-- Center info -->
+                <div class="focus-info">
+                    <div class="time-display" id="timeDisplay">25:00</div>
+                    <div class="focus-score" id="focusScore">100</div>
+                </div>
+            </div>
+            
+            <!-- Minimal controls -->
+            <div class="controls-bar">
+                <button id="actionBtn" class="primary-btn" data-state="ready">
+                    <span class="btn-text">Begin Focus</span>
+                </button>
+                
+                <!-- Time selector (hidden by default) -->
+                <div id="timeSelector" class="time-selector hidden">
+                    <button class="time-option" data-minutes="15">15</button>
+                    <button class="time-option" data-minutes="25">25</button>
+                    <button class="time-option" data-minutes="45">45</button>
+                    <button class="time-option" data-minutes="60">60</button>
+                </div>
+            </div>
+            
+            <!-- Status text -->
+            <p id="statusText" class="status-text">Click to set your focus time</p>
+        </main>
         
-        <!-- Loading screen -->
-        <div id="loading">
-            <h2>Loading AI Study Buddy...</h2>
-            <div class="loading-info">
-                <p>Camera access will be requested to track your focus</p>
-                <p>This app uses your webcam for face tracking only - no images are stored</p>
-            </div>
-            <div class="loading-spinner"></div>
-        </div>
-        
-        <!-- Main app content (hidden until loaded) -->
-        <div id="appContent" class="hidden">
-            <!-- Session Goal Setting -->
-            <div id="goalSetting" class="goal-setting">
-                <h3>Set Your Focus Goal</h3>
-                <p>How long would you like to focus today?</p>
-                
-                <!-- Face Detection Preview -->
-                <div class="preview-container">
-                    <div class="preview-webcam">
-                        <video id="previewWebcam" autoplay playsinline></video>
-                    </div>
-                    <div class="preview-face">
-                        <canvas id="previewFaceCanvas"></canvas>
-                    </div>
-                    <div class="preview-status">
-                        <span id="previewStatus">Setting up camera...</span>
-                    </div>
-                </div>
-                
-                <div class="goal-options">
-                    <button class="goal-btn" data-minutes="15">15 min</button>
-                    <button class="goal-btn" data-minutes="25">25 min</button>
-                    <button class="goal-btn" data-minutes="45">45 min</button>
-                    <button class="goal-btn" data-minutes="60">60 min</button>
-                </div>
-                <div class="custom-goal">
-                    <input type="number" id="customMinutes" min="5" max="180" placeholder="Custom minutes">
-                    <button id="customGoalBtn">Set Custom Goal</button>
-                </div>
-            </div>
-            
-            <!-- Main Interface -->
-            <div class="main-layout hidden" id="mainInterface">
-                <!-- Progress Ring -->
-                <div class="progress-container">
-                    <div class="progress-ring">
-                        <svg class="progress-svg" width="120" height="120">
-                            <circle class="progress-bg" cx="60" cy="60" r="54"></circle>
-                            <circle class="progress-bar" cx="60" cy="60" r="54"></circle>
-                        </svg>
-                        <div class="progress-text">
-                            <span id="progressTime">0:00</span>
-                            <span id="progressGoal">/ 25:00</span>
-                        </div>
-                    </div>
-                </div>
-                
-                <!-- Media Section -->
-                <div class="media-section">
-                    <div class="webcam-container">
-                        <video id="webcam" autoplay playsinline></video>
-                    </div>
-                    
-                    <div class="face-container">
-                        <canvas id="faceCanvas"></canvas>
-                        <!-- Focus Quality Indicator -->
-                        <div class="focus-quality">
-                            <span class="quality-label">Focus Quality:</span>
-                            <div class="quality-bar">
-                                <div class="quality-fill" id="qualityFill"></div>
-                            </div>
-                            <span id="qualityText">Excellent</span>
-                        </div>
-                    </div>
-                </div>
-                
-                <!-- Status and Controls -->
-                <div class="status-container">
-                    <p id="status">Getting ready...</p>
-                    <div class="session-stats">
-                        <div class="stat">
-                            <span class="stat-value" id="focusStreak">0</span>
-                            <span class="stat-label">Focus Streak</span>
-                        </div>
-                        <div class="stat">
-                            <span class="stat-value" id="smileCount">0</span>
-                            <span class="stat-label">Smiles</span>
-                        </div>
-                        <div class="stat">
-                            <span class="stat-value" id="distractionCount">0</span>
-                            <span class="stat-label">Distractions</span>
-                        </div>
-                    </div>
-                    <div class="controls">
-                        <button id="mainActionButton" class="btn">Start Session</button>
-                        <button id="resetButton" class="btn btn-secondary">Reset</button>
-                        <button id="completeButton" class="btn btn-success hidden">Complete Session</button>
-                    </div>
-                </div>
-            </div>
-            
-            <!-- Completion Celebration -->
-            <div id="completionCelebration" class="completion-celebration hidden">
-                <div class="celebration-content">
-                    <h2>🎉 Session Complete!</h2>
-                    <div class="completion-stats">
-                        <div class="completion-stat">
-                            <span class="big-number" id="completedTime">25:00</span>
-                            <span class="stat-description">Time Focused</span>
-                        </div>
-                        <div class="completion-stat">
-                            <span class="big-number" id="finalQuality">92%</span>
-                            <span class="stat-description">Focus Quality</span>
-                        </div>
-                        <div class="completion-stat">
-                            <span class="big-number" id="finalStreak">12</span>
-                            <span class="stat-description">Best Streak</span>
-                        </div>
-                    </div>
-                    <div class="achievement-message" id="achievementMessage">
-                        Great job staying focused! You're building excellent habits.
-                    </div>
-                    <div class="celebration-controls">
-                        <button id="newSessionBtn">Start New Session</button>
-                        <button id="takeBreakBtn">Take a Break</button>
-                    </div>
-                </div>
-            </div>
-            
-            <!-- Simple instruction -->
-            <div class="instruction">
-                <p>The face will track your head movement and smile when you smile!</p>
+        <!-- Completion view -->
+        <div id="completion" class="completion-view hidden">
+            <div class="completion-content">
+                <div class="completion-score" id="completionScore">92</div>
+                <h2 class="completion-title">Focus Complete</h2>
+                <p class="completion-time" id="completionTime">25 minutes of deep focus</p>
+                <button id="newSessionBtn" class="primary-btn">New Session</button>
             </div>
         </div>
-        
-        <!-- Audio context will be created in JavaScript -->
     </div>
     
     <!-- Scripts -->
