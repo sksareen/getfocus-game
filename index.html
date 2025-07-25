@@ -55,9 +55,23 @@
             <!-- Status text -->
             <p id="statusText" class="status-text">Click to set your focus time</p>
             
-            <!-- Webcam toggle -->
-            <button id="webcamToggle" class="webcam-toggle" title="Toggle webcam visibility">👁</button>
+            <!-- Controls group at bottom right -->
+            <div class="controls-group">
+                <div class="music-controls">
+                    <button id="musicToggle" class="music-toggle" title="Toggle background music">🔇</button>
+                    <input type="range" id="musicVolume" class="music-volume" min="0" max="100" value="30" title="Music volume">
+                </div>
+                <div class="action-controls">
+                    <!-- <button id="feedbackBtn" class="control-btn" title="Give feedback">💬</button> -->
+                    <button id="webcamToggle" class="webcam-toggle" title="Toggle webcam visibility">👁</button>
+                </div>
+            </div>
         </main>
+        
+        <!-- Audio elements -->
+        <audio id="backgroundMusic" loop preload="auto">
+            <source src="cicada.mp3" type="audio/mpeg">
+        </audio>
         
         <!-- Completion view -->
         <div id="completion" class="completion-view hidden">
@@ -65,7 +79,49 @@
                 <div class="completion-score" id="completionScore">92</div>
                 <h2 class="completion-title">Focus Complete</h2>
                 <p class="completion-time" id="completionTime">25 minutes of deep focus</p>
-                <button id="newSessionBtn" class="primary-btn">New Session</button>
+                
+                <!-- Feedback form -->
+                <div class="feedback-form">
+                    <h3 class="feedback-title">How was your session?</h3>
+                    <div class="rating-stars">
+                        <button class="star" data-rating="1">☆</button>
+                        <button class="star" data-rating="2">☆</button>
+                        <button class="star" data-rating="3">☆</button>
+                        <button class="star" data-rating="4">☆</button>
+                        <button class="star" data-rating="5">☆</button>
+                    </div>
+                    <textarea id="feedbackText" class="feedback-textarea" placeholder="Share your thoughts about this session (optional)..." rows="3"></textarea>
+                    <div class="feedback-actions">
+                        <button id="skipFeedback" class="skip-btn">Skip</button>
+                        <button id="submitFeedback" class="submit-btn">Submit</button>
+                    </div>
+                </div>
+                
+                <button id="newSessionBtn" class="primary-btn hidden">New Session</button>
+            </div>
+        </div>
+        
+        <!-- Product Feedback Modal -->
+        <div id="productFeedbackModal" class="modal-overlay hidden">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h3>Share Your Feedback</h3>
+                    <button id="closeFeedbackModal" class="close-btn">✕</button>
+                </div>
+                <div class="modal-body">
+                    <p>Help us improve Focus! Your feedback matters.</p>
+                    <div class="product-rating-stars">
+                        <button class="product-star" data-rating="1">☆</button>
+                        <button class="product-star" data-rating="2">☆</button>
+                        <button class="product-star" data-rating="3">☆</button>
+                        <button class="product-star" data-rating="4">☆</button>
+                        <button class="product-star" data-rating="5">☆</button>
+                    </div>
+                    <textarea id="productFeedbackText" class="product-feedback-textarea" placeholder="What do you think about Focus? Any suggestions or improvements?" rows="4"></textarea>
+                </div>
+                <div class="modal-footer">
+                    <button id="submitProductFeedback" class="submit-btn">Submit Feedback</button>
+                </div>
             </div>
         </div>
     </div>

@@ -16,6 +16,23 @@
 - ✅ Minimal progress ring
 - ✅ Full-screen completion celebration
 
+## Planned Features (Latest Feedback)
+- 📋 **Feedback Form**: Add post-session feedback collection for continuous improvement
+- 🎵 **Background Music**: Japanese cicada ambient sounds (reference: https://www.youtube.com/watch?v=fCoxh9_ATU4)
+- ⏰ **Time Check-ins**: Gentle notifications every 10 minutes during sessions for awareness
+
+## Recently Implemented Features ✅
+- ✅ **Feedback Form System**: Post-session rating (1-5 stars) and comment collection with local storage
+- ✅ **Background Music Controls**: Music toggle and volume slider with graceful error handling
+- ✅ **Time Check-ins**: 10-minute interval notifications during focus sessions
+- ✅ **Enhanced UI**: Music controls positioned bottom-left, feedback form integrated into completion view
+
+## Implementation Details
+- **Feedback Data**: Stored locally in browser localStorage as JSON with rating, comment, session duration, focus score, and timestamp
+- **Music System**: HTML5 audio with loop, volume control, and error handling for missing files
+- **Check-in Timer**: setInterval-based system that runs every 10 minutes during active sessions
+- **UI Integration**: Seamless flow from session → completion → feedback → new session
+
 ## Architecture Changes
 - **HTML**: Simplified to single view with loading, main, and completion states
 - **CSS**: Pure black background, monochromatic palette, breathing animations

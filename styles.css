@@ -163,6 +163,7 @@ body {
     margin-bottom: var(--space-md);
     background: rgba(255, 255, 255, 0.05);
     border-radius: 12px;
+    -webkit-backdrop-filter: blur(10px);
     backdrop-filter: blur(10px);
     border: 1px solid rgba(255, 255, 255, 0.1);
 }
@@ -338,6 +339,222 @@ body {
     font-size: 1.125rem;
 }
 
+/* Feedback form */
+.feedback-form {
+    margin: var(--space-lg) 0;
+    padding: var(--space-lg);
+    background: rgba(255, 255, 255, 0.03);
+    border-radius: 16px;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.feedback-title {
+    font-size: 1.25rem;
+    font-weight: 300;
+    margin-bottom: var(--space-md);
+    text-align: center;
+}
+
+.rating-stars {
+    display: flex;
+    justify-content: center;
+    gap: 8px;
+    margin-bottom: var(--space-md);
+}
+
+.star {
+    background: none;
+    border: none;
+    font-size: 2rem;
+    color: rgba(255, 255, 255, 0.3);
+    cursor: pointer;
+    transition: all 0.2s ease;
+    padding: 4px;
+}
+
+.star:hover,
+.star.active {
+    color: var(--accent);
+    transform: scale(1.1);
+}
+
+.feedback-textarea {
+    width: 100%;
+    min-height: 80px;
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    border-radius: 12px;
+    padding: var(--space-sm);
+    color: var(--text-primary);
+    font-family: inherit;
+    font-size: 0.9rem;
+    resize: vertical;
+    margin-bottom: var(--space-md);
+}
+
+.feedback-textarea::placeholder {
+    color: rgba(255, 255, 255, 0.4);
+}
+
+.feedback-textarea:focus {
+    outline: none;
+    border-color: var(--accent);
+    background: rgba(255, 255, 255, 0.08);
+}
+
+.feedback-actions {
+    display: flex;
+    gap: var(--space-sm);
+    justify-content: center;
+}
+
+.skip-btn, .submit-btn {
+    padding: 12px 24px;
+    border-radius: 8px;
+    font-size: 0.9rem;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    border: none;
+}
+
+.skip-btn {
+    background: rgba(255, 255, 255, 0.1);
+    color: rgba(255, 255, 255, 0.7);
+}
+
+.skip-btn:hover {
+    background: rgba(255, 255, 255, 0.15);
+    color: rgba(255, 255, 255, 0.9);
+}
+
+.submit-btn {
+    background: var(--accent);
+    color: var(--bg-color);
+    font-weight: 500;
+}
+
+.submit-btn:hover {
+    background: #00d4aa;
+    transform: translateY(-1px);
+}
+
+/* Product Feedback Modal */
+.modal-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.8);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 1000;
+    -webkit-backdrop-filter: blur(10px);
+    backdrop-filter: blur(10px);
+}
+
+.modal-content {
+    background: var(--bg-color);
+    border-radius: 16px;
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    width: 90%;
+    max-width: 500px;
+    max-height: 80vh;
+    overflow-y: auto;
+}
+
+.modal-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: var(--space-lg);
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.modal-header h3 {
+    margin: 0;
+    font-size: 1.5rem;
+    font-weight: 300;
+}
+
+.close-btn {
+    background: none;
+    border: none;
+    color: rgba(255, 255, 255, 0.7);
+    font-size: 1.5rem;
+    cursor: pointer;
+    padding: 4px;
+    border-radius: 50%;
+    transition: all 0.2s ease;
+}
+
+.close-btn:hover {
+    color: rgba(255, 255, 255, 1);
+    background: rgba(255, 255, 255, 0.1);
+}
+
+.modal-body {
+    padding: var(--space-lg);
+}
+
+.modal-body p {
+    margin-bottom: var(--space-md);
+    color: var(--text-secondary);
+}
+
+.product-rating-stars {
+    display: flex;
+    justify-content: center;
+    gap: 8px;
+    margin-bottom: var(--space-md);
+}
+
+.product-star {
+    background: none;
+    border: none;
+    font-size: 2rem;
+    color: rgba(255, 255, 255, 0.3);
+    cursor: pointer;
+    transition: all 0.2s ease;
+    padding: 4px;
+}
+
+.product-star:hover,
+.product-star.active {
+    color: var(--accent);
+    transform: scale(1.1);
+}
+
+.product-feedback-textarea {
+    width: 100%;
+    min-height: 100px;
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    border-radius: 12px;
+    padding: var(--space-sm);
+    color: var(--text-primary);
+    font-family: inherit;
+    font-size: 0.9rem;
+    resize: vertical;
+}
+
+.product-feedback-textarea::placeholder {
+    color: rgba(255, 255, 255, 0.4);
+}
+
+.product-feedback-textarea:focus {
+    outline: none;
+    border-color: var(--accent);
+    background: rgba(255, 255, 255, 0.08);
+}
+
+.modal-footer {
+    padding: var(--space-lg);
+    border-top: 1px solid rgba(255, 255, 255, 0.1);
+    text-align: center;
+}
+
 /* Responsive design */
 @media (max-width: 480px) {
     .focus-container {
@@ -383,11 +600,26 @@ body {
     50% { opacity: 0.2; }
 }
 
-/* Webcam toggle */
-.webcam-toggle {
+/* Controls group */
+.controls-group {
     position: absolute;
     bottom: var(--space-md);
     right: var(--space-md);
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    gap: 12px;
+}
+
+/* Action controls row */
+.action-controls {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+/* Control buttons (feedback and webcam) */
+.control-btn, .webcam-toggle {
     background: rgba(255, 255, 255, 0.1);
     border: 1px solid rgba(255, 255, 255, 0.2);
     border-radius: 50%;
@@ -399,11 +631,73 @@ body {
     cursor: pointer;
     font-size: 1.2rem;
     transition: all 0.2s ease;
+    color: rgba(255, 255, 255, 0.7);
 }
 
-.webcam-toggle:hover {
+.control-btn:hover, .webcam-toggle:hover {
     background: rgba(255, 255, 255, 0.2);
     border-color: rgba(255, 255, 255, 0.4);
+    color: rgba(255, 255, 255, 1);
+}
+
+/* Music controls */
+.music-controls {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 25px;
+    padding: 8px 16px;
+    -webkit-backdrop-filter: blur(10px);
+    backdrop-filter: blur(10px);
+}
+
+.music-toggle {
+    background: none;
+    border: none;
+    color: rgba(255, 255, 255, 0.7);
+    cursor: pointer;
+    font-size: 1.2rem;
+    padding: 4px;
+    border-radius: 50%;
+    transition: all 0.2s ease;
+}
+
+.music-toggle:hover {
+    color: rgba(255, 255, 255, 1);
+    background: rgba(255, 255, 255, 0.1);
+}
+
+.music-toggle.active {
+    color: var(--accent);
+}
+
+.music-volume {
+    width: 80px;
+    height: 4px;
+    background: rgba(255, 255, 255, 0.2);
+    border-radius: 2px;
+    outline: none;
+    cursor: pointer;
+}
+
+.music-volume::-webkit-slider-thumb {
+    appearance: none;
+    width: 12px;
+    height: 12px;
+    border-radius: 50%;
+    background: var(--accent);
+    cursor: pointer;
+}
+
+.music-volume::-moz-range-thumb {
+    width: 12px;
+    height: 12px;
+    border-radius: 50%;
+    background: var(--accent);
+    border: none;
+    cursor: pointer;
 }
 
 /* Webcam states */
