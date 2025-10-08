@@ -1,134 +1,350 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Focus</title>
-    <link rel="stylesheet" href="styles.css">
+    <!DOCTYPE html>
+    <html lang="en">
+    <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>BRUTALIST FOCUS TRACKER</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500&family=Spectral:wght@400;500&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="styles-brutalist.css">
 </head>
-<body>
-    <!-- Loading state -->
-    <div id="loading" class="loading-state">
-        <div class="breathing-circle"></div>
-        <p class="loading-text" id="loadingText">Preparing your focus session</p>
-    </div>
-    
-    <!-- Main app -->
-    <div id="app" class="app hidden">
-        <!-- Single unified view -->
-        <main class="focus-view">
-            <!-- Top info bar -->
-            <div class="info-bar">
-                <div class="time-display" id="timeDisplay">25:00</div>
-                <div class="focus-score" id="focusScore">100</div>
-            </div>
-            
-            <!-- Focus visualization -->
-            <div class="focus-container">
-                <video id="webcam" class="webcam-feed" autoplay playsinline></video>
-                <canvas id="focusCanvas" class="focus-canvas"></canvas>
-                
-                <!-- Minimal progress ring -->
-                <svg class="progress-ring" width="400" height="400">
-                    <circle class="ring-bg" cx="200" cy="200" r="190"></circle>
-                    <circle class="ring-progress" cx="200" cy="200" r="190"></circle>
-                </svg>
-            </div>
-            
-            <!-- Minimal controls -->
-            <div class="controls-bar">
-                <button id="actionBtn" class="primary-btn" data-state="ready">
-                    <span class="btn-text">Begin Focus</span>
-                </button>
-                
-                <button id="timeBtn" class="time-btn">25 min</button>
-                
-                <!-- Time selector (hidden by default) -->
-                <div id="timeSelector" class="time-selector hidden">
-                    <button class="time-option" data-minutes="15">15</button>
-                    <button class="time-option" data-minutes="25">25</button>
-                    <button class="time-option" data-minutes="45">45</button>
-                    <button class="time-option" data-minutes="60">60</button>
-                </div>
-            </div>
-            
-            <!-- Status text -->
-            <p id="statusText" class="status-text">Click to set your focus time</p>
-            
-            <!-- Controls group at bottom right -->
-            <div class="controls-group">
-                <div class="music-controls">
-                    <button id="musicToggle" class="music-toggle" title="Toggle background music">🔇</button>
-                    <input type="range" id="musicVolume" class="music-volume" min="0" max="100" value="30" title="Music volume">
-                </div>
-                <div class="action-controls">
-                    <!-- <button id="feedbackBtn" class="control-btn" title="Give feedback">💬</button> -->
-                    <button id="webcamToggle" class="webcam-toggle" title="Toggle webcam visibility">👁</button>
-                </div>
-            </div>
-        </main>
-        
-        <!-- Audio elements -->
-        <audio id="backgroundMusic" loop preload="auto">
-            <source src="cicada.mp3" type="audio/mpeg">
-        </audio>
-        
-        <!-- Completion view -->
-        <div id="completion" class="completion-view hidden">
-            <div class="completion-content">
-                <div class="completion-score" id="completionScore">92</div>
-                <h2 class="completion-title">Focus Complete</h2>
-                <p class="completion-time" id="completionTime">25 minutes of deep focus</p>
-                
-                <!-- Feedback form -->
-                <div class="feedback-form">
-                    <h3 class="feedback-title">How was your session?</h3>
-                    <div class="rating-stars">
-                        <button class="star" data-rating="1">☆</button>
-                        <button class="star" data-rating="2">☆</button>
-                        <button class="star" data-rating="3">☆</button>
-                        <button class="star" data-rating="4">☆</button>
-                        <button class="star" data-rating="5">☆</button>
+    <body>
+        <!-- Loading state -->
+        <div id="loading" class="loading-state">
+            <div class="breathing-rectangle"></div>
+            <p class="loading-text" id="loadingText">PREPARING FOCUS SESSION</p>
+        </div>
+
+        <!-- Main app - Simplified layout -->
+        <div id="app" class="app hidden">
+            <!-- Stats and real-time feedback (Top) -->
+            <div class="stats-section">
+                <div class="info-bar">
+                    <div class="focus-score" id="focusScore">
+                        <span class="score-value" id="scoreValue">100%</span>
+                        <span class="score-label">FOCUS</span>
                     </div>
-                    <textarea id="feedbackText" class="feedback-textarea" placeholder="Share your thoughts about this session (optional)..." rows="3"></textarea>
-                    <div class="feedback-actions">
-                        <button id="skipFeedback" class="skip-btn">Skip</button>
-                        <button id="submitFeedback" class="submit-btn">Submit</button>
+                    <div class="time-display" id="timeDisplay">25:00</div>
+                    <div class="status-display" id="statusText">Ready to focus</div>
+                </div>
+            </div>
+
+            <!-- Primary visual (Center) -->
+            <div class="visual-section">
+                <div class="focus-container">
+                    <video id="webcam" class="webcam-feed" autoplay playsinline></video>
+                    <canvas id="focusCanvas" class="focus-canvas"></canvas>
+
+                    <!-- Calibration overlay -->
+                    <div class="calibration-overlay" id="calibrationOverlay">
+                        <div class="calibration-message">
+                            <h3>POSITION YOUR FACE</h3>
+                            <p>Align your face with the blue crosshair</p>
+                            <p class="calibration-status" id="calibrationStatus">Detecting face...</p>
+                        </div>
+                    </div>
+
+                    <!-- Progress visualization -->
+                    <div class="progress-container">
+                        <div class="progress-bar">
+                            <div class="progress-fill" id="progressFill"></div>
+                        </div>
                     </div>
                 </div>
-                
-                <button id="newSessionBtn" class="primary-btn hidden">New Session</button>
+            </div>
+
+            <!-- Controls (Bottom) -->
+            <div class="controls-section">
+                <div class="main-controls">
+                    <button id="actionBtn" class="primary-btn" data-state="ready">
+                        <span class="btn-text">BEGIN FOCUS</span>
+                    </button>
+
+                    <button id="timeBtn" class="time-btn">25 MIN</button>
+
+                    <!-- Time selector (hidden by default) -->
+                    <div id="timeSelector" class="time-selector hidden">
+                        <button class="time-option" data-minutes="5">5 MIN</button>
+                        <button class="time-option" data-minutes="15">15 MIN</button>
+                        <button class="time-option" data-minutes="25">25 MIN</button>
+                        <button class="time-option" data-minutes="45">45 MIN</button>
+                        <button class="time-option" data-minutes="60">60 MIN</button>
+                    </div>
+                </div>
+
+                <div class="secondary-controls">
+                    <button id="webcamToggle" class="control-btn" data-tooltip="Toggle webcam (C)" aria-label="Toggle webcam">
+                        <svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M17 10.5V7c0-.55-.45-1-1-1H4c-.55 0-1 .45-1 1v10c0 .55.45 1 1 1h12c.55 0 1-.45 1-1v-3.5l4 4v-11l-4 4zM14 13h-3v3H9v-3H6v-2h3V8h2v3h3v2z"/></svg>
+                    </button>
+                    <button id="volumeBtn" class="control-btn" data-tooltip="Toggle volume (V)" aria-label="Toggle volume">
+                        <svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M3 9v6h4l5 5V4L7 9H3zm13.5 3c0-1.77-1.02-3.29-2.5-4.03v8.05c1.48-.73 2.5-2.25 2.5-4.02zM14 3.23v2.06c2.89.86 5 3.54 5 6.71s-2.11 5.85-5 6.71v2.06c4.01-.91 7-4.49 7-8.77s-2.99-7.86-7-8.77z"/></svg>
+                    </button>
+                    <button id="resetBtn" class="control-btn" data-tooltip="Reset session (R)" aria-label="Reset session">
+                        <svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M17.65 6.35C16.2 4.9 14.21 4 12 4c-4.42 0-7.99 3.58-7.99 8s3.57 8 7.99 8c3.73 0 6.84-2.55 7.73-6h-2.08c-.82 2.33-3.04 4-5.65 4-3.31 0-6-2.69-6-6s2.69-6 6-6c1.66 0 3.14.69 4.22 1.78L13 11h7V4l-2.35 2.35z"/></svg>
+                    </button>
+                    <button id="insightsBtn" class="control-btn" data-tooltip="View insights (I)" aria-label="View insights">
+                        <svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zM9 17H7v-7h2v7zm4 0h-2V7h2v10zm4 0h-2v-4h2v4z"/></svg>
+                    </button>
+                    <button id="themeToggle" class="control-btn" data-tooltip="Toggle theme (L)" aria-label="Toggle theme">
+                        <svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M20 8.69V4h-4.69L12 .69 8.69 4H4v4.69L.69 12 4 15.31V20h4.69L12 23.31 15.31 20H20v-4.69L23.31 12 20 8.69zM12 18c-3.31 0-6-2.69-6-6s2.69-6 6-6 6 2.69 6 6-2.69 6-6 6zm0-10c-2.21 0-4 1.79-4 4s1.79 4 4 4 4-1.79 4-4-1.79-4-4-4z"/></svg>
+                    </button>
+                    <button id="helpBtn" class="control-btn" data-tooltip="How it works (H)" aria-label="Help and info">
+                        <svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M11 18h2v-2h-2v2zm1-16C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 18c-4.41 0-8-3.59-8-8s3.59-8 8-8 8 3.59 8 8-3.59 8-8 8zm0-14c-2.21 0-4 1.79-4 4h2c0-1.1.9-2 2-2s2 .9 2 2c0 2-3 1.75-3 5h2c0-2.25 3-2.5 3-5 0-2.21-1.79-4-4-4z"/></svg>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Optional insights dropdown -->
+            <div class="insights-dropdown" id="insightsDropdown" hidden>
+                <div class="insights-content">
+                    <div class="insights-header">
+                        <h3>SESSION INSIGHTS</h3>
+                        <button id="closeInsights" class="close-btn">×</button>
+                    </div>
+
+                    <!-- Statistics panel -->
+                    <div class="stats-panel">
+                        <div class="stats-grid">
+                            <div class="stat-item">
+                                <span class="stat-value" id="sessionsCompleted">0</span>
+                                <span class="stat-label">SESSIONS</span>
+                            </div>
+                            <div class="stat-item">
+                                <span class="stat-value" id="totalFocusTime">00:00</span>
+                                <span class="stat-label">TOTAL TIME</span>
+                            </div>
+                            <div class="stat-item">
+                                <span class="stat-value" id="avgFocusScore">0</span>
+                                <span class="stat-label">AVG SCORE</span>
+                            </div>
+                            <div class="stat-item">
+                                <span class="stat-value" id="bestStreak">0</span>
+                                <span class="stat-label">BEST STREAK</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Distraction Timeline -->
+                    <div id="distractionTimeline" class="distraction-timeline">
+                        <div class="timeline-header">
+                            <span class="timeline-title">DISTRACTION TIMELINE</span>
+                            <span class="timeline-info" id="distractionInfo">Looking away for >2s = distraction</span>
+                        </div>
+                        <div class="timeline-bar" id="timelineBar"></div>
+                        <div class="timeline-labels">
+                            <span>START</span>
+                            <span id="timelineEnd">END</span>
+                        </div>
+                    </div>
+
+                    <!-- Score History Chart -->
+                    <div class="score-history-section">
+                        <div class="score-history-title">SCORE HISTORY</div>
+                        <div class="score-chart-container">
+                            <canvas id="scoreChart" width="800" height="150"></canvas>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Help modal -->
+            <div class="insights-dropdown" id="helpDropdown" hidden>
+                <div class="insights-content">
+                    <div class="insights-header">
+                        <h3>HOW IT WORKS</h3>
+                        <button id="closeHelp" class="close-btn">×</button>
+                    </div>
+
+                    <div class="help-sections">
+                        <!-- Face Detection -->
+                        <div class="help-section">
+                            <h4 class="help-section-title">🎯 Face Detection</h4>
+                            <p class="help-text">
+                                We use Google's BlazeFace AI model to track your face in real-time. 
+                                The <strong style="color: #00ff00;">green box</strong> shows your face is detected with high confidence, 
+                                while a <strong style="color: #ffff00;">yellow box</strong> means lower confidence.
+                            </p>
+                            <p class="help-text">
+                                The <strong style="color: #58a6ff;">blue crosshair</strong> marks the center of your face for calibration.
+                            </p>
+                        </div>
+
+                        <!-- Scoring System -->
+                        <div class="help-section">
+                            <h4 class="help-section-title">📊 How Scoring Works</h4>
+                            <div class="help-list">
+                                <div class="help-list-item">
+                                    <span class="help-icon">✅</span>
+                                    <div>
+                                        <strong>Face detected + high confidence</strong>
+                                        <br>Your score increases gradually (0.1-0.3 per second)
+                                    </div>
+                                </div>
+                                <div class="help-list-item">
+                                    <span class="help-icon">⚡</span>
+                                    <div>
+                                        <strong>Consistency bonus</strong>
+                                        <br>Long focus streaks (10s, 30s, 60s) give extra points
+                                    </div>
+                                </div>
+                                <div class="help-list-item">
+                                    <span class="help-icon">⚠️</span>
+                                    <div>
+                                        <strong>Look away for >2 seconds</strong>
+                                        <br>Counts as a distraction event
+                                    </div>
+                                </div>
+                                <div class="help-list-item">
+                                    <span class="help-icon">❌</span>
+                                    <div>
+                                        <strong>Look away for >5 seconds</strong>
+                                        <br>Score decreases (up to -2 points per second)
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Visual Feedback -->
+                        <div class="help-section">
+                            <h4 class="help-section-title">👁️ Visual Feedback</h4>
+                            <div class="help-list">
+                                <div class="help-list-item">
+                                    <span class="help-icon">🟢</span>
+                                    <div>
+                                        <strong>Green glow on canvas</strong> = Deep focus state
+                                    </div>
+                                </div>
+                                <div class="help-list-item">
+                                    <span class="help-icon">🔴</span>
+                                    <div>
+                                        <strong>Red pulse on canvas</strong> = Distracted state
+                                    </div>
+                                </div>
+                                <div class="help-list-item">
+                                    <span class="help-icon">🔊</span>
+                                    <div>
+                                        <strong>Down-twinkle sound</strong> = Focus score dropped below 60%
+                                    </div>
+                                </div>
+                                <div class="help-list-item">
+                                    <span class="help-icon">🎵</span>
+                                    <div>
+                                        <strong>Up-skip sound</strong> = Milestone achieved or challenge completed
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Calibration -->
+                        <div class="help-section">
+                            <h4 class="help-section-title">🎚️ Calibration Period</h4>
+                            <p class="help-text">
+                                When you start a session, you'll see a <strong>5-second calibration overlay</strong>. 
+                                This gives you time to:
+                            </p>
+                            <ul class="help-bullet-list">
+                                <li>Position your face in the center</li>
+                                <li>Adjust your distance from the camera</li>
+                                <li>Ensure good lighting</li>
+                                <li>Get comfortable before scoring begins</li>
+                            </ul>
+                        </div>
+
+                        <!-- Tips -->
+                        <div class="help-section">
+                            <h4 class="help-section-title">💡 Tips for Best Results</h4>
+                            <ul class="help-bullet-list">
+                                <li><strong>Lighting:</strong> Make sure your face is well-lit</li>
+                                <li><strong>Position:</strong> Keep your face centered in the webcam view</li>
+                                <li><strong>Distance:</strong> Sit at a comfortable distance (arm's length)</li>
+                                <li><strong>Focus:</strong> The webcam opacity is low (30%) to minimize distraction</li>
+                                <li><strong>Audio:</strong> Use headphones for better ambient sound experience</li>
+                            </ul>
+                        </div>
+
+                        <!-- Keyboard Shortcuts -->
+                        <div class="help-section">
+                            <h4 class="help-section-title">⌨️ Keyboard Shortcuts</h4>
+                            <div class="shortcuts-grid">
+                                <div class="shortcut-item">
+                                    <kbd>Space</kbd>
+                                    <span>Start/Pause</span>
+                                </div>
+                                <div class="shortcut-item">
+                                    <kbd>R</kbd>
+                                    <span>Reset session</span>
+                                </div>
+                                <div class="shortcut-item">
+                                    <kbd>W</kbd>
+                                    <span>Toggle webcam</span>
+                                </div>
+                                <div class="shortcut-item">
+                                    <kbd>M</kbd>
+                                    <span>Toggle music</span>
+                                </div>
+                                <div class="shortcut-item">
+                                    <kbd>V</kbd>
+                                    <span>Toggle volume</span>
+                                </div>
+                                <div class="shortcut-item">
+                                    <kbd>L</kbd>
+                                    <span>Toggle theme</span>
+                                </div>
+                                <div class="shortcut-item">
+                                    <kbd>I</kbd>
+                                    <span>View insights</span>
+                                </div>
+                                <div class="shortcut-item">
+                                    <kbd>H</kbd>
+                                    <span>Show this help</span>
+                                </div>
+                                <div class="shortcut-item">
+                                    <kbd>Esc</kbd>
+                                    <span>Close/Exit</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Audio elements -->
+            <audio id="backgroundMusic" loop preload="auto">
+                <source src="cicada.mp3" type="audio/mpeg">
+            </audio>
+            
+            <!-- Completion view -->
+            <div id="completion" class="completion-view hidden">
+                <div class="completion-content">
+                    <div class="completion-score" id="completionScore">92</div>
+                    <h2 class="completion-title">FOCUS COMPLETE</h2>
+                    <p class="completion-time" id="completionTime">25 MINUTES OF DEEP FOCUS</p>
+                    
+                    <!-- Enhanced metrics -->
+                    <div class="completion-metrics">
+                        <div class="metric-item">
+                            <span class="metric-value" id="completionStreak">0</span>
+                            <span class="metric-label">MAX STREAK</span>
+                        </div>
+                        <div class="metric-item">
+                            <span class="metric-value" id="completionDistractions">0</span>
+                            <span class="metric-label">DISTRACTIONS</span>
+                        </div>
+                        <div class="metric-item">
+                            <span class="metric-value" id="completionConsistency">0%</span>
+                            <span class="metric-label">CONSISTENCY</span>
+                        </div>
+                    </div>
+                    
+                    <button id="newSessionBtn" class="primary-btn">NEW SESSION</button>
+                </div>
             </div>
         </div>
         
-        <!-- Product Feedback Modal -->
-        <div id="productFeedbackModal" class="modal-overlay hidden">
-            <div class="modal-content">
-                <div class="modal-header">
-                    <h3>Share Your Feedback</h3>
-                    <button id="closeFeedbackModal" class="close-btn">✕</button>
-                </div>
-                <div class="modal-body">
-                    <p>Help us improve Focus! Your feedback matters.</p>
-                    <div class="product-rating-stars">
-                        <button class="product-star" data-rating="1">☆</button>
-                        <button class="product-star" data-rating="2">☆</button>
-                        <button class="product-star" data-rating="3">☆</button>
-                        <button class="product-star" data-rating="4">☆</button>
-                        <button class="product-star" data-rating="5">☆</button>
-                    </div>
-                    <textarea id="productFeedbackText" class="product-feedback-textarea" placeholder="What do you think about Focus? Any suggestions or improvements?" rows="4"></textarea>
-                </div>
-                <div class="modal-footer">
-                    <button id="submitProductFeedback" class="submit-btn">Submit Feedback</button>
-                </div>
-            </div>
-        </div>
-    </div>
-    
-    <!-- Scripts -->
-    <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs"></script>
-    <script src="https://cdn.jsdelivr.net/npm/@tensorflow-models/blazeface"></script>
-    <script src="script.js"></script>
-</body>
-</html> 
+        <!-- Scripts -->
+        <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs"></script>
+        <script src="https://cdn.jsdelivr.net/npm/@tensorflow-models/blazeface"></script>
+        <script src="script-brutalist.js"></script>
+    </body>
+    </html> 
